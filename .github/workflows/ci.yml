@@ -13,7 +13,7 @@ permissions:
 jobs:
   validate-compose:
     name: Validate Docker Compose
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
