@@ -1,0 +1,22 @@
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrete și mediu
+.env
+
+# Editor și sistem
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
