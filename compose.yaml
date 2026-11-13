@@ -95,6 +95,34 @@ services:
       retries: 5
       start_period: 10s
 
+  bff:
+    build:
+      context: ./services/bff
+    restart: unless-stopped
+
+    environment:
+      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      USERS_GRPC_URL: ${USERS_GRPC_URL:-users:50051}
+      QUIZ_BANK_GRPC_URL: ${QUIZ_BANK_GRPC_URL:-quiz-bank:50052}
+
+    ports:
+      - "${BFF_PORT:-3001}:3001"
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+
 volumes:
   postgres_data:
   mongodb_data:
