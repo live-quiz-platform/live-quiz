@@ -1,0 +1,8 @@
+src/quiz_bank/generated/*
+!src/quiz_bank/generated/__init__.py
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
