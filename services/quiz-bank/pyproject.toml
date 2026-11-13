@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quiz-bank"
+version = "0.1.0"
+description = "Microserviciu gRPC pentru banca de intrebari si quiz-urile profesorului"
+requires-python = ">=3.12"
+dependencies = [
+    "grpcio>=1.66",
+    "grpcio-tools>=1.66",
+    "grpcio-health-checking>=1.66",
+    "protobuf>=5.27",
+    "pymongo>=4.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "testcontainers[mongodb]>=4.8",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["src/quiz_bank/generated"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+markers = [
+    "integration: teste de integrare (necesita Docker si MongoDB real)",
+]
+
+[tool.coverage.run]
+source = ["src/quiz_bank"]
+omit = ["src/quiz_bank/generated/*"]
