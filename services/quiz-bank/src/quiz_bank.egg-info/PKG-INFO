@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: quiz-bank
+Version: 0.1.0
+Summary: Microserviciu gRPC pentru banca de intrebari si quiz-urile profesorului
+Requires-Python: >=3.12
+Requires-Dist: grpcio>=1.66
+Requires-Dist: grpcio-tools>=1.66
+Requires-Dist: grpcio-health-checking>=1.66
+Requires-Dist: protobuf>=5.27
+Requires-Dist: pymongo>=4.8
+Provides-Extra: dev
+Requires-Dist: pytest>=8.3; extra == "dev"
+Requires-Dist: pytest-cov>=5.0; extra == "dev"
+Requires-Dist: testcontainers[mongodb]>=4.8; extra == "dev"
+Requires-Dist: ruff>=0.6; extra == "dev"
