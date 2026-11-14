@@ -1,0 +1,58 @@
+<form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+  <div class="form-field">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="username"
+      inputmode="email" placeholder="nume@exemplu.ro" spellcheck="false"
+      formControlName="email" required
+      [class.input-invalid]="hasError('email')"
+      [attr.aria-invalid]="hasError('email') ? 'true' : null"
+      [attr.aria-describedby]="hasError('email') ? 'email-error' : null">
+    @if (hasError('email')) {
+      <p class="field-error" id="email-error" role="alert">
+        @if (loginForm.controls.email.hasError('required')) {
+          Introdu adresa de email.
+        } @else {
+          Introdu o adresă de email validă.
+        }
+      </p>
+    }
+  </div>
+
+  <div class="form-field">
+    <label for="password">Parolă</label>
+    <div class="password-field">
+      <input id="password" name="password"
+        [type]="passwordVisible() ? 'text' : 'password'"
+        autocomplete="current-password" placeholder="Introdu parola"
+        formControlName="password" required
+        [class.input-invalid]="hasError('password')"
+        [attr.aria-invalid]="hasError('password') ? 'true' : null"
+        [attr.aria-describedby]="hasError('password') ? 'password-error' : null">
+      <button class="password-toggle" type="button" aria-controls="password"
+        [attr.aria-label]="passwordVisible() ? 'Ascunde parola' : 'Arată parola'"
+        [attr.aria-pressed]="passwordVisible()"
+        (click)="togglePasswordVisibility()">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6Z"
+            stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+          @if (passwordVisible()) {
+            <path d="m3 3 14 14" stroke="currentColor"
+              stroke-width="1.5" stroke-linecap="round"/>
+          }
+        </svg>
+      </button>
+    </div>
+    @if (hasError('password')) {
+      <p class="field-error" id="password-error" role="alert">Introdu parola.</p>
+    }
+  </div>
+
+  <button class="login-button" type="submit">
+    Conectează-te
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor"
+        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</form>

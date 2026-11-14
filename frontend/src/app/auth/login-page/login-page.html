@@ -38,27 +38,7 @@
         <p class="login-description">Conectează-te pentru a intra în platformă.</p>
       </header>
 
-      <form class="login-form" (submit)="$event.preventDefault()" novalidate>
-        <div class="form-field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="username"
-            inputmode="email" placeholder="nume@exemplu.ro" spellcheck="false">
-        </div>
-
-        <div class="form-field">
-          <label for="password">Parolă</label>
-          <input id="password" name="password" type="password"
-            autocomplete="current-password" placeholder="Introdu parola">
-        </div>
-
-        <button class="login-button" type="submit">
-          Conectează-te
-          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor"
-              stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      </form>
+      <app-login-form />
 
       <p class="login-caption">Pentru studenți, profesori și administratori.</p>
     </div>
