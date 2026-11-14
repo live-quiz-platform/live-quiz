@@ -94,6 +94,48 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+  
+  identity-migrate:
+    image: migrate/migrate:v4.20.1
+    restart: "no"
+    
+    command:
+      - "-path"
+      - "/migrations"
+      - "-database"
+      - "postgres://${POSTGRES_USER_IDENTITY}:${IDENTITY_DB_PASSWORD}@postgres:5432/${POSTGRES_IDENTITY_DB}?sslmode=disable"
+      - "up"
+
+    volumes:
+      - ./services/identity/migrations:/migrations:ro
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  
+  identity:
+    build:
+      context: ./services/identity
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB_PORT: 5432
+      POSTGRES_USER_IDENTITY: ${POSTGRES_USER_IDENTITY:?POSTGRES_USER_IDENTITY is required}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?IDENTITY_DB_PASSWORD is required}
+      POSTGRES_IDENTITY_DB: ${POSTGRES_IDENTITY_DB:?POSTGRES_IDENTITY_DB is required}
+      POSTGRES_SSL_MODE: disable
+      IDENTITY_GRPC_PORT: 50051
+
+    ports:
+      - "${IDENTITY_GRPC_PORT:-50051}:50051"
+
+    depends_on:
+      identity-migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
