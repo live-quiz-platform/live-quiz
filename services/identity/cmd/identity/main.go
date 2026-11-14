@@ -12,12 +12,15 @@ import (
 
 	identityv1 "github.com/live-quiz-platform/live-quiz/services/identity/api/identity/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/config"
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/database"
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/transport/grpcserver"
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/user"
 	userpostgres "github.com/live-quiz-platform/live-quiz/services/identity/internal/user/postgres"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func main() {
@@ -54,6 +57,20 @@ func run() error {
 
 	identityv1.RegisterIdentityServiceServer(grpcServer, grpcHandler)
 
+	healthServer := health.NewServer()
+	healthpb.RegisterHealthServer(grpcServer, healthServer)
+	reflection.Register(grpcServer)
+
+	healthServer.SetServingStatus(
+		"",
+		healthpb.HealthCheckResponse_SERVING,
+	)
+
+	healthServer.SetServingStatus(
+		"identity.v1.IdentityService",
+		healthpb.HealthCheckResponse_SERVING,
+	)
+
 	listener, err := net.Listen(
 		"tcp",
 		fmt.Sprintf(":%d", cfg.GRPC.Port),
@@ -82,6 +99,17 @@ func run() error {
 	select {
 	case <-shutdownCtx.Done():
 		log.Println("identity service shutting down")
+
+		healthServer.SetServingStatus(
+			"",
+			healthpb.HealthCheckResponse_NOT_SERVING,
+		)
+
+		healthServer.SetServingStatus(
+			"identity.v1.IdentityService",
+			healthpb.HealthCheckResponse_NOT_SERVING,
+		)
+
 		grpcServer.GracefulStop()
 		return nil
 
