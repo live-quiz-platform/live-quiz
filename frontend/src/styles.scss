@@ -1,1 +1,40 @@
 /* You can add global styles to this file, and also import other style files */
+
+:root {
+  color-scheme: light;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #24242a;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  --page-background: #ffffff;
+  --panel-background: #f5f4f7;
+  --text-main: #24242a;
+  --text-muted: #76767f;
+  --border-color: #e3e2e8;
+  --brand-purple: #6c4cf1;
+  --brand-orange: #f78a62;
+  --brand-yellow: #f6cf58;
+  --character-dark: #24242a;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--brand-purple);
+  outline-offset: 4px;
+}

@@ -1,0 +1,66 @@
+<main class="login-page">
+  <section class="welcome-panel" aria-labelledby="welcome-title">
+    <header class="welcome-header">
+      <a class="brand" href="/login" aria-label="Live Quiz, pagina de autentificare">
+        <span class="brand-mark" aria-hidden="true">Q<span></span></span>
+        <span>Live Quiz<span class="brand-period">.</span></span>
+      </a>
+      <span class="live-badge"><span></span> Quiz-uri live</span>
+    </header>
+
+    <div class="welcome-content">
+      <div class="welcome-copy">
+        <h2 id="welcome-title">Învățăm mai bine<br>împreună.</h2>
+        <p>Participă la quiz-urile seminarului tău.</p>
+      </div>
+
+      <app-login-characters />
+    </div>
+
+    <footer class="welcome-footer">
+      <span class="footer-line" aria-hidden="true"></span>
+      Platformă de quiz live pentru seminare
+    </footer>
+  </section>
+
+  <section class="login-panel" aria-labelledby="login-title">
+    <div class="login-box">
+      <span class="login-symbol" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M4 12h11m-4-4 4 4-4 4"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+
+      <header class="login-heading">
+        <p class="eyebrow">AUTENTIFICARE</p>
+        <h1 id="login-title">Bine ai revenit!</h1>
+        <p class="login-description">Conectează-te pentru a intra în platformă.</p>
+      </header>
+
+      <form class="login-form" (submit)="$event.preventDefault()" novalidate>
+        <div class="form-field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="username"
+            inputmode="email" placeholder="nume@exemplu.ro" spellcheck="false">
+        </div>
+
+        <div class="form-field">
+          <label for="password">Parolă</label>
+          <input id="password" name="password" type="password"
+            autocomplete="current-password" placeholder="Introdu parola">
+        </div>
+
+        <button class="login-button" type="submit">
+          Conectează-te
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor"
+              stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </form>
+
+      <p class="login-caption">Pentru studenți, profesori și administratori.</p>
+    </div>
+  </section>
+</main>
