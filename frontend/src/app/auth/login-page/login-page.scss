@@ -241,3 +241,9 @@
     margin-bottom: 26px;
   }
 }
+
+@media (max-width: 360px) {
+  .live-badge {
+    display: none;
+  }
+}
