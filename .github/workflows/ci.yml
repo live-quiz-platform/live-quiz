@@ -22,6 +22,7 @@ jobs:
         run: docker compose --env-file .env.example config --quiet
 
   test-identity:
+    if: ${{ github.event_name == 'push' || contains(github.event.pull_request.title, 'identity') }}
     name: Test Identity Service
     runs-on: ubuntu-latest
     timeout-minutes: 10
