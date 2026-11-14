@@ -14,7 +14,7 @@
         <p>Participă la quiz-urile seminarului tău.</p>
       </div>
 
-      <app-login-characters />
+      <app-login-characters [passwordActive]="passwordActive()" />
     </div>
 
     <footer class="welcome-footer">
@@ -38,7 +38,7 @@
         <p class="login-description">Conectează-te pentru a intra în platformă.</p>
       </header>
 
-      <app-login-form />
+      <app-login-form (passwordActiveChange)="passwordActive.set($event)" />
 
       <p class="login-caption">Pentru studenți, profesori și administratori.</p>
     </div>

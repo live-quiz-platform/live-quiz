@@ -20,7 +20,8 @@
 
   <div class="form-field">
     <label for="password">Parolă</label>
-    <div class="password-field">
+    <div class="password-field" (focusin)="onPasswordFocus()"
+      (focusout)="onPasswordBlur($event)">
       <input id="password" name="password"
         [type]="passwordVisible() ? 'text' : 'password'"
         autocomplete="current-password" placeholder="Introdu parola"

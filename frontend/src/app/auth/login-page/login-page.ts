@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { LoginCharacters } from '../login-characters/login-characters';
 import { LoginForm } from '../login-form/login-form';
 
@@ -8,4 +8,6 @@ import { LoginForm } from '../login-form/login-form';
   templateUrl: './login-page.html',
   styleUrl: './login-page.scss'
 })
-export class LoginPage {}
+export class LoginPage {
+  protected readonly passwordActive = signal(false);
+}
