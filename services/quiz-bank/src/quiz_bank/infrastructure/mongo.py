@@ -5,7 +5,7 @@ QUIZ_DB = "quiz"
 
 
 def create_client(uri: str) -> MongoClient:
-    return MongoClient(uri, serverSelectionTimeoutMS=5000)
+    return MongoClient(uri, serverSelectionTimeoutMS=5000, tz_aware=True)
 
 
 def ensure_indexes(client: MongoClient) -> None:
