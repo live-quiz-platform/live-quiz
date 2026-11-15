@@ -10,6 +10,18 @@ src/quiz_bank.egg-info/dependency_links.txt
 src/quiz_bank.egg-info/requires.txt
 src/quiz_bank.egg-info/top_level.txt
 src/quiz_bank/generated/__init__.py
+src/quiz_bank/generated/question_bank/__init__.py
+src/quiz_bank/generated/question_bank/v1/__init__.py
+src/quiz_bank/generated/question_bank/v1/question_bank_pb2.py
+src/quiz_bank/generated/question_bank/v1/question_bank_pb2.pyi
+src/quiz_bank/generated/question_bank/v1/question_bank_pb2_grpc.py
+src/quiz_bank/generated/quiz/__init__.py
+src/quiz_bank/generated/quiz/v1/__init__.py
+src/quiz_bank/generated/quiz/v1/quiz_pb2.py
+src/quiz_bank/generated/quiz/v1/quiz_pb2.pyi
+src/quiz_bank/generated/quiz/v1/quiz_pb2_grpc.py
+src/quiz_bank/infrastructure/__init__.py
+src/quiz_bank/infrastructure/mongo.py
 src/quiz_bank/questions/__init__.py
 src/quiz_bank/questions/application/__init__.py
 src/quiz_bank/questions/application/question_service.py
@@ -32,3 +44,4 @@ src/quiz_bank/quizzes/infrastructure/quiz_repository.py
 src/quiz_bank/shared/__init__.py
 src/quiz_bank/shared/auth.py
 src/quiz_bank/shared/errors.py
+src/quiz_bank/shared/grpc_errors.py
