@@ -35,6 +35,9 @@ extend-exclude = ["src/quiz_bank/generated"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["quiz_bank", "tests"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
