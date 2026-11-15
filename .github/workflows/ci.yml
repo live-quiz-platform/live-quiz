@@ -140,3 +140,4 @@ jobs:
 
       - name: Domain coverage threshold
         run: coverage report --include='*/domain/*' --fail-under=70
+        run: docker build -t live-quiz-identity:ci ./services/identity
