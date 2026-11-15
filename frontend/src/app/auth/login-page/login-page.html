@@ -1,17 +1,17 @@
 <main class="login-page">
   <section class="welcome-panel" aria-labelledby="welcome-title">
     <header class="welcome-header">
-      <a class="brand" href="/login" aria-label="Live Quiz, pagina de autentificare">
+      <a class="brand" href="/login" aria-label="Live Quiz, sign-in page">
         <span class="brand-mark" aria-hidden="true">Q<span></span></span>
         <span>Live Quiz<span class="brand-period">.</span></span>
       </a>
-      <span class="live-badge"><span></span> Quiz-uri live</span>
+      <span class="live-badge"><span></span> Live quizzes</span>
     </header>
 
     <div class="welcome-content">
       <div class="welcome-copy">
-        <h2 id="welcome-title">Învățăm mai bine<br>împreună.</h2>
-        <p>Participă la quiz-urile seminarului tău.</p>
+        <h2 id="welcome-title">Learn better<br>together.</h2>
+        <p>Take part in your class quizzes.</p>
       </div>
 
       <app-login-characters [passwordActive]="passwordActive()" />
@@ -19,7 +19,7 @@
 
     <footer class="welcome-footer">
       <span class="footer-line" aria-hidden="true"></span>
-      Platformă de quiz live pentru seminare
+      Live quizzes for your classes
     </footer>
   </section>
 
@@ -33,14 +33,14 @@
       </span>
 
       <header class="login-heading">
-        <p class="eyebrow">AUTENTIFICARE</p>
-        <h1 id="login-title">Bine ai revenit!</h1>
-        <p class="login-description">Conectează-te pentru a intra în platformă.</p>
+        <p class="eyebrow">SIGN IN</p>
+        <h1 id="login-title">Welcome back!</h1>
+        <p class="login-description">Sign in to access your account.</p>
       </header>
 
       <app-login-form (passwordActiveChange)="passwordActive.set($event)" />
 
-      <p class="login-caption">Pentru studenți, profesori și administratori.</p>
+      <p class="login-caption">For students, instructors and administrators.</p>
     </div>
   </section>
 </main>

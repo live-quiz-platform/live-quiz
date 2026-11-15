@@ -42,7 +42,7 @@ describe('LoginForm', () => {
     fixture.detectChanges();
 
     expect(element.querySelector('#email-error')?.textContent)
-      .toContain('Introdu adresa de email.');
+      .toContain('Enter your email address.');
     expect(element.querySelector('#password-error')).toBeNull();
     expect(input('email').getAttribute('aria-describedby')).toBe('email-error');
   });
@@ -51,9 +51,9 @@ describe('LoginForm', () => {
     submit();
 
     expect(element.querySelector('#email-error')?.textContent)
-      .toContain('Introdu adresa de email.');
+      .toContain('Enter your email address.');
     expect(element.querySelector('#password-error')?.textContent)
-      .toContain('Introdu parola.');
+      .toContain('Enter your password.');
     expect(input('email').getAttribute('aria-invalid')).toBe('true');
     expect(input('password').getAttribute('aria-invalid')).toBe('true');
   });
@@ -64,7 +64,7 @@ describe('LoginForm', () => {
     submit();
 
     expect(element.querySelector('#email-error')?.textContent)
-      .toContain('Introdu o adresă de email validă.');
+      .toContain('Enter a valid email address.');
     expect(element.querySelector('#password-error')).toBeNull();
 
     fill('email', 'student@exemplu.ro');
@@ -96,7 +96,7 @@ describe('LoginForm', () => {
 
     expect(password.type).toBe('text');
     expect(password.value).toBe('parola-de-test');
-    expect(toggle.getAttribute('aria-label')).toBe('Ascunde parola');
+    expect(toggle.getAttribute('aria-label')).toBe('Hide password');
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
 
     toggle.click();
@@ -104,6 +104,6 @@ describe('LoginForm', () => {
 
     expect(password.type).toBe('password');
     expect(password.value).toBe('parola-de-test');
-    expect(toggle.getAttribute('aria-label')).toBe('Arată parola');
+    expect(toggle.getAttribute('aria-label')).toBe('Show password');
   });
 });

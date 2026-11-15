@@ -21,6 +21,6 @@ describe('App', () => {
     const harness = await RouterTestingHarness.create('/');
     expect(TestBed.inject(Router).url).toBe('/login');
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent)
-      .toContain('Bine ai revenit!');
+      .toContain('Welcome back!');
   });
 });
