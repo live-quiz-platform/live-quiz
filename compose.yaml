@@ -1,7 +1,7 @@
 
 services:
   postgres:
-    image: postgres:18.6-alpine
+    image: postgres:18.7-alpine
     restart: unless-stopped
 
     environment:
@@ -28,7 +28,7 @@ services:
       start_period: 30s
 
   mongodb:
-    image: mongo:9.0.4
+    image: mongo:9.0.8
     restart: unless-stopped
 
     environment:
@@ -72,7 +72,7 @@ services:
       start_period: 30s
     
   nats:
-    image: nats:2.15.2-alpine
+    image: nats:2.15.3-alpine
     restart: unless-stopped
 
     command: ["-js", "-sd", "/data", "-m", "8222"]
@@ -94,9 +94,99 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+  
+  identity-migrate:
+    image: migrate/migrate:v4.20.1
+    restart: "no"
+    
+    command:
+      - "-path"
+      - "/migrations"
+      - "-database"
+      - "postgres://${POSTGRES_USER_IDENTITY}:${IDENTITY_DB_PASSWORD}@postgres:5432/${POSTGRES_IDENTITY_DB}?sslmode=disable"
+      - "up"
+
+    volumes:
+      - ./services/identity/migrations:/migrations:ro
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  identity-tls-init:
+    image: alpine:3.24.4
+    restart: "no"
+
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        if [ ! -s /certs/identity.crt ] || [ ! -s /certs/identity.key ]; then
+          apk add --no-cache openssl
+          umask 077
+          openssl req -x509 -newkey rsa:3072 -sha256 -days 3650 -nodes \
+            -keyout /certs/identity.key \
+            -out /certs/identity.crt \
+            -subj "/CN=localhost" \
+            -addext "basicConstraints=critical,CA:TRUE" \
+            -addext "subjectAltName=DNS:localhost,DNS:identity,IP:127.0.0.1"
+          cp /certs/identity.crt /certs/ca.crt
+          chown 65532:65532 /certs/identity.key
+          chmod 0400 /certs/identity.key
+          chmod 0444 /certs/identity.crt /certs/ca.crt
+        fi
+
+    volumes:
+      - identity_tls:/certs
+
+  identity:
+    build:
+      context: ./services/identity
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB_PORT: 5432
+      POSTGRES_USER_IDENTITY: ${POSTGRES_USER_IDENTITY:?POSTGRES_USER_IDENTITY is required}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?IDENTITY_DB_PASSWORD is required}
+      POSTGRES_IDENTITY_DB: ${POSTGRES_IDENTITY_DB:?POSTGRES_IDENTITY_DB is required}
+      POSTGRES_SSL_MODE: disable
+      IDENTITY_GRPC_PORT: 50051
+      IDENTITY_TLS_CERT_FILE: /run/identity-tls/identity.crt
+      IDENTITY_TLS_KEY_FILE: /run/identity-tls/identity.key
+
+    ports:
+      - "${IDENTITY_GRPC_PORT:-50051}:50051"
+
+    volumes:
+      - identity_tls:/run/identity-tls:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/grpc_health_probe",
+          "-addr=localhost:50051",
+          "-service=identity.v1.IdentityService",
+          "-tls",
+          "-tls-ca-cert=/run/identity-tls/ca.crt",
+          "-tls-server-name=identity"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    depends_on:
+      identity-migrate:
+        condition: service_completed_successfully
+      identity-tls-init:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
   mongodb_data:
   redis_data:
   nats_data:
+  identity_tls:
