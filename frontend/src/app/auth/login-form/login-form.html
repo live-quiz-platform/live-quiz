@@ -44,9 +44,12 @@
         </svg>
       </button>
     </div>
-    @if (hasError('password')) {
-      <p class="field-error" id="password-error" role="alert">Enter your password.</p>
-    }
+    <div class="password-actions">
+      @if (hasError('password')) {
+        <p class="field-error" id="password-error" role="alert">Enter your password.</p>
+      }
+      <a class="forgot-password-button" routerLink="/forgot-password">Forgot Password?</a>
+    </div>
   </div>
 
   <button class="login-button" type="submit">

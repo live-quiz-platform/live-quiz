@@ -7,6 +7,12 @@ export const routes: Routes = [
       import('./auth/login-page/login-page').then((page) => page.LoginPage),
     title: 'Sign in | Live Quiz'
   },
+  {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./auth/forgot-password-page/forgot-password-page').then((page) => page.ForgotPasswordPage),
+    title: 'Forgot Password | Live Quiz'
+  },
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }
 ];

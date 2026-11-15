@@ -247,3 +247,34 @@
     display: none;
   }
 }
+
+.sign-up-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 6px;
+  margin: 16px 0 0;
+  color: var(--text-main);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.sign-up-button {
+  text-decoration: none;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  font-size: inherit;
+  font-weight: 650;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.sign-up-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

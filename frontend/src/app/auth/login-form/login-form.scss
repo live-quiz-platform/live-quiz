@@ -116,3 +116,34 @@
   width: 18px;
   height: 18px;
 }
+
+.password-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px 12px;
+}
+
+.password-actions .field-error {
+  margin-right: auto;
+}
+
+.forgot-password-button {
+  text-decoration: none;
+  min-height: 24px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.forgot-password-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
