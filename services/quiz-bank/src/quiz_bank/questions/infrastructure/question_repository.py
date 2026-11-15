@@ -10,6 +10,7 @@ from quiz_bank.questions.domain.question import (
     Question,
     QuestionType,
 )
+from quiz_bank.shared.errors import conflict, not_found
 
 
 def _oid(value: str) -> ObjectId | None:
@@ -19,7 +20,7 @@ def _oid(value: str) -> ObjectId | None:
         return None
 
 
-def _to_document(question: Question) -> dict[str, Any]:
+def _to_document(question: Question, version: int) -> dict[str, Any]:
     return {
         "ownerId": question.owner_id,
         "type": question.type.value,
@@ -31,6 +32,7 @@ def _to_document(question: Question) -> dict[str, Any]:
         "tags": list(question.tags),
         "createdAt": question.created_at,
         "updatedAt": question.updated_at,
+        "version": version,
     }
 
 
@@ -49,6 +51,7 @@ def _from_document(doc: dict[str, Any]) -> Question:
         tags=list(doc.get("tags", [])),
         created_at=doc["createdAt"],
         updated_at=doc["updatedAt"],
+        version=doc.get("version", 0),
     )
 
 
@@ -57,7 +60,8 @@ class MongoQuestionRepository:
         self._col = collection
 
     def add(self, question: Question) -> Question:
-        result = self._col.insert_one(_to_document(question))
+        question.version = 0
+        result = self._col.insert_one(_to_document(question, question.version))
         question.id = str(result.inserted_id)
         return question
 
@@ -71,10 +75,17 @@ class MongoQuestionRepository:
     def save(self, question: Question) -> None:
         oid = _oid(question.id or "")
         if oid is None:
-            return
-        self._col.replace_one(
-            {"_id": oid, "ownerId": question.owner_id}, _to_document(question)
+            raise not_found("intrebarea nu exista")
+        result = self._col.replace_one(
+            {"_id": oid, "ownerId": question.owner_id, "version": question.version},
+            _to_document(question, question.version + 1),
         )
+        if result.matched_count == 1:
+            question.version += 1
+            return
+        if self._col.count_documents({"_id": oid, "ownerId": question.owner_id}, limit=1) == 0:
+            raise not_found("intrebarea nu exista")
+        raise conflict("intrebarea a fost modificata intre timp, reincarca si reincearca")
 
     def delete(self, question_id: str, owner_id: str) -> bool:
         oid = _oid(question_id)

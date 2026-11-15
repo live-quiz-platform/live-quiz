@@ -11,6 +11,7 @@ _CODES = {
     ErrorCode.NOT_FOUND: grpc.StatusCode.NOT_FOUND,
     ErrorCode.ALREADY_EXISTS: grpc.StatusCode.ALREADY_EXISTS,
     ErrorCode.FAILED_PRECONDITION: grpc.StatusCode.FAILED_PRECONDITION,
+    ErrorCode.CONFLICT: grpc.StatusCode.ABORTED,
 }
 
 

@@ -6,6 +6,7 @@ class ErrorCode(Enum):
     NOT_FOUND = "NOT_FOUND"
     ALREADY_EXISTS = "ALREADY_EXISTS"
     FAILED_PRECONDITION = "FAILED_PRECONDITION"
+    CONFLICT = "CONFLICT"
 
 
 class DomainError(Exception):
@@ -33,3 +34,7 @@ def already_exists(message: str) -> DomainError:
 
 def failed_precondition(message: str) -> DomainError:
     return DomainError(ErrorCode.FAILED_PRECONDITION, message)
+
+
+def conflict(message: str) -> DomainError:
+    return DomainError(ErrorCode.CONFLICT, message)

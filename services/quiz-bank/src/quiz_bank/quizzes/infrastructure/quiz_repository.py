@@ -10,6 +10,7 @@ from quiz_bank.quizzes.domain.quiz import (
     Quiz,
     QuizSettings,
 )
+from quiz_bank.shared.errors import conflict, not_found
 
 
 def _oid(value: str) -> ObjectId | None:
@@ -51,7 +52,7 @@ def _question_from_document(doc: dict[str, Any]) -> QuestionSnapshot:
     )
 
 
-def _to_document(quiz: Quiz) -> dict[str, Any]:
+def _to_document(quiz: Quiz, version: int) -> dict[str, Any]:
     return {
         "ownerId": quiz.owner_id,
         "title": quiz.title,
@@ -62,6 +63,7 @@ def _to_document(quiz: Quiz) -> dict[str, Any]:
         },
         "createdAt": quiz.created_at,
         "updatedAt": quiz.updated_at,
+        "version": version,
     }
 
 
@@ -78,6 +80,7 @@ def _from_document(doc: dict[str, Any]) -> Quiz:
         ),
         created_at=doc["createdAt"],
         updated_at=doc["updatedAt"],
+        version=doc.get("version", 0),
     )
 
 
@@ -86,7 +89,8 @@ class MongoQuizRepository:
         self._col = collection
 
     def add(self, quiz: Quiz) -> Quiz:
-        result = self._col.insert_one(_to_document(quiz))
+        quiz.version = 0
+        result = self._col.insert_one(_to_document(quiz, quiz.version))
         quiz.id = str(result.inserted_id)
         return quiz
 
@@ -100,8 +104,17 @@ class MongoQuizRepository:
     def save(self, quiz: Quiz) -> None:
         oid = _oid(quiz.id or "")
         if oid is None:
+            raise not_found("quiz-ul nu exista")
+        result = self._col.replace_one(
+            {"_id": oid, "ownerId": quiz.owner_id, "version": quiz.version},
+            _to_document(quiz, quiz.version + 1),
+        )
+        if result.matched_count == 1:
+            quiz.version += 1
             return
-        self._col.replace_one({"_id": oid, "ownerId": quiz.owner_id}, _to_document(quiz))
+        if self._col.count_documents({"_id": oid, "ownerId": quiz.owner_id}, limit=1) == 0:
+            raise not_found("quiz-ul nu exista")
+        raise conflict("quiz-ul a fost modificat intre timp, reincarca si reincearca")
 
     def delete(self, quiz_id: str, owner_id: str) -> bool:
         oid = _oid(quiz_id)

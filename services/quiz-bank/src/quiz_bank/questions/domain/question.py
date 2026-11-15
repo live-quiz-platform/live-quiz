@@ -100,6 +100,7 @@ class Question:
     id: str | None = None
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
+    version: int = 0
 
     @classmethod
     def create(
