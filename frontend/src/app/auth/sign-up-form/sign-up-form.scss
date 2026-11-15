@@ -1,0 +1,27 @@
+.login-form {
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.form-field {
+  gap: 8px;
+}
+
+.input-field {
+  position: relative;
+}
+
+.form-field input {
+  padding-left: 46px;
+}
+
+.field-icon {
+  position: absolute;
+  top: 50%;
+  left: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
