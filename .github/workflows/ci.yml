@@ -22,7 +22,6 @@ jobs:
         run: docker compose --env-file .env.example config --quiet
 
   test-identity:
-    if: ${{ false }}
     name: Test Identity Service
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -92,6 +91,10 @@ jobs:
           IDENTITY_DB_PASSWORD: identity_password
           POSTGRES_IDENTITY_DB: identity_db
           POSTGRES_SSL_MODE: disable
+          IDENTITY_GRPC_PORT: 50051
+          # The database test only validates these paths; TLS tests create their own files.
+          IDENTITY_TLS_CERT_FILE: /tmp/identity.crt
+          IDENTITY_TLS_KEY_FILE: /tmp/identity.key
         run: go test -race -cover ./...
 
       - name: Build Identity Docker image
