@@ -51,19 +51,45 @@ func HashPassword(password string) (string, error) {
 }
 
 func VerifyPassword(password string, encodedHash string) (bool, error) {
+	parsedHash, err := parsePasswordHash(encodedHash)
+	if err != nil {
+		return false, err
+	}
+
+	actualHash := argon2.IDKey(
+		[]byte(password),
+		parsedHash.salt,
+		parsedHash.iterations,
+		parsedHash.memory,
+		parsedHash.parallelism,
+		uint32(len(parsedHash.hash)),
+	)
+
+	return subtle.ConstantTimeCompare(actualHash, parsedHash.hash) == 1, nil
+}
+
+type parsedPasswordHash struct {
+	salt        []byte
+	hash        []byte
+	memory      uint32
+	iterations  uint32
+	parallelism uint8
+}
+
+func parsePasswordHash(encodedHash string) (parsedPasswordHash, error) {
 	parts := strings.Split(encodedHash, "$")
 
 	if len(parts) != 6 || parts[0] != "" || parts[1] != "argon2id" {
-		return false, fmt.Errorf("invalid password hash format")
+		return parsedPasswordHash{}, fmt.Errorf("invalid password hash format")
 	}
 
 	var version int
 	if _, err := fmt.Sscanf(parts[2], "v=%d", &version); err != nil {
-		return false, fmt.Errorf("invalid Argon2 version: %w", err)
+		return parsedPasswordHash{}, fmt.Errorf("invalid Argon2 version: %w", err)
 	}
 
 	if version != argon2.Version {
-		return false, fmt.Errorf("unsupported Argon2 version: %d", version)
+		return parsedPasswordHash{}, fmt.Errorf("unsupported Argon2 version: %d", version)
 	}
 
 	var memory, iterations, parallelism uint32
@@ -75,34 +101,31 @@ func VerifyPassword(password string, encodedHash string) (bool, error) {
 		&iterations,
 		&parallelism,
 	); err != nil {
-		return false, fmt.Errorf("invalid Argon2 parameters: %w", err)
+		return parsedPasswordHash{}, fmt.Errorf("invalid Argon2 parameters: %w", err)
 	}
 
 	// Reject unreasonable parameters to prevent excessive resource usage.
 	if memory < 8*parallelism || memory > 1024*1024 ||
 		iterations == 0 || iterations > 10 ||
 		parallelism == 0 || parallelism > 16 {
-		return false, fmt.Errorf("invalid Argon2 parameters")
+		return parsedPasswordHash{}, fmt.Errorf("invalid Argon2 parameters")
 	}
 
 	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
 	if err != nil || len(salt) < 8 || len(salt) > 64 {
-		return false, fmt.Errorf("invalid password salt")
+		return parsedPasswordHash{}, fmt.Errorf("invalid password salt")
 	}
 
 	expectedHash, err := base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil || len(expectedHash) == 0 || len(expectedHash) > 64 {
-		return false, fmt.Errorf("invalid password hash")
+		return parsedPasswordHash{}, fmt.Errorf("invalid password hash")
 	}
 
-	actualHash := argon2.IDKey(
-		[]byte(password),
-		salt,
-		iterations,
-		memory,
-		uint8(parallelism),
-		uint32(len(expectedHash)),
-	)
-
-	return subtle.ConstantTimeCompare(actualHash, expectedHash) == 1, nil
+	return parsedPasswordHash{
+		salt:        salt,
+		hash:        expectedHash,
+		memory:      memory,
+		iterations:  iterations,
+		parallelism: uint8(parallelism),
+	}, nil
 }

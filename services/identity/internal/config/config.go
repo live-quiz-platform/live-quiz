@@ -1,4 +1,3 @@
-
 package config
 
 import (
@@ -23,30 +22,20 @@ type PostgresConfig struct {
 }
 
 type GRPCConfig struct {
-	Port int
+	Port        int
+	TLSCertFile string
+	TLSKeyFile  string
 }
 
 func Load() (Config, error) {
-	// PostgreSQL port
-	portStr := strings.TrimSpace(os.Getenv("POSTGRES_DB_PORT"))
-	if portStr == "" {
-		return Config{}, fmt.Errorf("missing required environment variable: POSTGRES_DB_PORT")
+	port, err := portFromEnv("POSTGRES_DB_PORT")
+	if err != nil {
+		return Config{}, err
 	}
 
-	port, err := strconv.Atoi(portStr)
-	if err != nil || port < 1 || port > 65535 {
-		return Config{}, fmt.Errorf("invalid POSTGRES_DB_PORT: %s", portStr)
-	}
-
-	// gRPC port
-	grpcPortStr := strings.TrimSpace(os.Getenv("IDENTITY_GRPC_PORT"))
-	if grpcPortStr == "" {
-		return Config{}, fmt.Errorf("missing required environment variable: IDENTITY_GRPC_PORT")
-	}
-
-	grpcPort, err := strconv.Atoi(grpcPortStr)
-	if err != nil || grpcPort < 1 || grpcPort > 65535 {
-		return Config{}, fmt.Errorf("invalid IDENTITY_GRPC_PORT: %s", grpcPortStr)
+	grpcPort, err := portFromEnv("IDENTITY_GRPC_PORT")
+	if err != nil {
+		return Config{}, err
 	}
 
 	cfg := Config{
@@ -59,7 +48,9 @@ func Load() (Config, error) {
 			SSLMode:  strings.TrimSpace(os.Getenv("POSTGRES_SSL_MODE")),
 		},
 		GRPC: GRPCConfig{
-			Port: grpcPort,
+			Port:        grpcPort,
+			TLSCertFile: strings.TrimSpace(os.Getenv("IDENTITY_TLS_CERT_FILE")),
+			TLSKeyFile:  strings.TrimSpace(os.Getenv("IDENTITY_TLS_KEY_FILE")),
 		},
 	}
 
@@ -74,7 +65,25 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("missing required environment variable: POSTGRES_IDENTITY_DB")
 	case cfg.Postgres.SSLMode == "":
 		return Config{}, fmt.Errorf("missing required environment variable: POSTGRES_SSL_MODE")
+	case cfg.GRPC.TLSCertFile == "":
+		return Config{}, fmt.Errorf("missing required environment variable: IDENTITY_TLS_CERT_FILE")
+	case cfg.GRPC.TLSKeyFile == "":
+		return Config{}, fmt.Errorf("missing required environment variable: IDENTITY_TLS_KEY_FILE")
 	}
 
 	return cfg, nil
+}
+
+func portFromEnv(name string) (int, error) {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return 0, fmt.Errorf("missing required environment variable: %s", name)
+	}
+
+	port, err := strconv.Atoi(value)
+	if err != nil || port < 1 || port > 65535 {
+		return 0, fmt.Errorf("invalid %s: %s", name, value)
+	}
+
+	return port, nil
 }

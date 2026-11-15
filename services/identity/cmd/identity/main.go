@@ -12,6 +12,7 @@ import (
 
 	identityv1 "github.com/live-quiz-platform/live-quiz/services/identity/api/identity/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/config"
@@ -53,23 +54,10 @@ func run() error {
 
 	grpcHandler := grpcserver.NewServer(registrationService)
 
-	grpcServer := grpc.NewServer()
-
-	identityv1.RegisterIdentityServiceServer(grpcServer, grpcHandler)
-
-	healthServer := health.NewServer()
-	healthpb.RegisterHealthServer(grpcServer, healthServer)
-	reflection.Register(grpcServer)
-
-	healthServer.SetServingStatus(
-		"",
-		healthpb.HealthCheckResponse_SERVING,
-	)
-
-	healthServer.SetServingStatus(
-		"identity.v1.IdentityService",
-		healthpb.HealthCheckResponse_SERVING,
-	)
+	grpcServer, healthServer, err := newGRPCServer(grpcHandler, cfg.GRPC)
+	if err != nil {
+		return err
+	}
 
 	listener, err := net.Listen(
 		"tcp",
@@ -100,20 +88,45 @@ func run() error {
 	case <-shutdownCtx.Done():
 		log.Println("identity service shutting down")
 
-		healthServer.SetServingStatus(
-			"",
-			healthpb.HealthCheckResponse_NOT_SERVING,
-		)
-
-		healthServer.SetServingStatus(
-			"identity.v1.IdentityService",
-			healthpb.HealthCheckResponse_NOT_SERVING,
-		)
-
+		setHealthStatus(healthServer, healthpb.HealthCheckResponse_NOT_SERVING)
 		grpcServer.GracefulStop()
 		return nil
 
 	case err := <-serveErr:
+		if err == nil {
+			return fmt.Errorf("gRPC server stopped unexpectedly")
+		}
 		return fmt.Errorf("gRPC server stopped unexpectedly: %w", err)
 	}
+}
+
+func newGRPCServer(
+	identityHandler identityv1.IdentityServiceServer,
+	cfg config.GRPCConfig,
+) (*grpc.Server, *health.Server, error) {
+	transportCredentials, err := credentials.NewServerTLSFromFile(
+		cfg.TLSCertFile,
+		cfg.TLSKeyFile,
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load gRPC TLS credentials: %w", err)
+	}
+
+	grpcServer := grpc.NewServer(grpc.Creds(transportCredentials))
+	identityv1.RegisterIdentityServiceServer(grpcServer, identityHandler)
+
+	healthServer := health.NewServer()
+	healthpb.RegisterHealthServer(grpcServer, healthServer)
+	reflection.Register(grpcServer)
+	setHealthStatus(healthServer, healthpb.HealthCheckResponse_SERVING)
+
+	return grpcServer, healthServer, nil
+}
+
+func setHealthStatus(
+	healthServer *health.Server,
+	status healthpb.HealthCheckResponse_ServingStatus,
+) {
+	healthServer.SetServingStatus("", status)
+	healthServer.SetServingStatus("identity.v1.IdentityService", status)
 }

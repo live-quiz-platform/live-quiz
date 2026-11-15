@@ -113,7 +113,31 @@ services:
       postgres:
         condition: service_healthy
 
-  
+  identity-tls-init:
+    image: alpine:3.24.4
+    restart: "no"
+
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        if [ ! -s /certs/identity.crt ] || [ ! -s /certs/identity.key ]; then
+          apk add --no-cache openssl
+          umask 077
+          openssl req -x509 -newkey rsa:3072 -sha256 -days 3650 -nodes \
+            -keyout /certs/identity.key \
+            -out /certs/identity.crt \
+            -subj "/CN=localhost" \
+            -addext "basicConstraints=critical,CA:TRUE" \
+            -addext "subjectAltName=DNS:localhost,DNS:identity,IP:127.0.0.1"
+          cp /certs/identity.crt /certs/ca.crt
+          chown 65532:65532 /certs/identity.key
+          chmod 0400 /certs/identity.key
+          chmod 0444 /certs/identity.crt /certs/ca.crt
+        fi
+
+    volumes:
+      - identity_tls:/certs
+
   identity:
     build:
       context: ./services/identity
@@ -129,17 +153,25 @@ services:
       POSTGRES_IDENTITY_DB: ${POSTGRES_IDENTITY_DB:?POSTGRES_IDENTITY_DB is required}
       POSTGRES_SSL_MODE: disable
       IDENTITY_GRPC_PORT: 50051
+      IDENTITY_TLS_CERT_FILE: /run/identity-tls/identity.crt
+      IDENTITY_TLS_KEY_FILE: /run/identity-tls/identity.key
 
     ports:
       - "${IDENTITY_GRPC_PORT:-50051}:50051"
-    
+
+    volumes:
+      - identity_tls:/run/identity-tls:ro
+
     healthcheck:
       test:
         [
           "CMD",
           "/grpc_health_probe",
           "-addr=localhost:50051",
-          "-service=identity.v1.IdentityService"
+          "-service=identity.v1.IdentityService",
+          "-tls",
+          "-tls-ca-cert=/run/identity-tls/ca.crt",
+          "-tls-server-name=identity"
         ]
       interval: 10s
       timeout: 5s
@@ -149,9 +181,12 @@ services:
     depends_on:
       identity-migrate:
         condition: service_completed_successfully
+      identity-tls-init:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
   mongodb_data:
   redis_data:
   nats_data:
+  identity_tls:
