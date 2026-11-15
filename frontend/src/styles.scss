@@ -3,19 +3,20 @@
 :root {
   color-scheme: light;
   font-family: 'Segoe UI', Arial, sans-serif;
-  color: #24242a;
+  color: #0f172a;
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
-  --page-background: #ffffff;
-  --panel-background: #f5f4f7;
-  --text-main: #24242a;
-  --text-muted: #76767f;
-  --border-color: #e3e2e8;
+  --page-background: #f7fbff;
+  --panel-background: rgba(255, 255, 255, 0.08);
+  --text-main: #0f172a;
+  --text-muted: #334a68;
+  --border-color: rgba(51, 99, 151, 0.28);
   --brand-purple: #6c4cf1;
   --brand-orange: #f78a62;
   --brand-yellow: #f6cf58;
   --character-dark: #24242a;
   --error-color: #b13f4c;
+  --accent-color: #235caa;
 }
 
 *,
@@ -38,4 +39,5 @@ a:focus-visible,
 button:focus-visible {
   outline: 3px solid var(--brand-purple);
   outline-offset: 4px;
+  outline-color: var(--accent-color);
 }

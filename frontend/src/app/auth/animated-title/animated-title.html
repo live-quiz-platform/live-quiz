@@ -1,0 +1,13 @@
+@for (line of titleLines(); track $index) {
+  <span class="title-line">
+    @for (word of line; track $index) {
+      <span class="title-word">
+        @for (character of word; track character.index) {
+          <span class="title-letter" [style.--letter-index]="character.index">{{ character.letter }}</span>
+        }
+      </span>@if (!$last) {
+        <span>{{ ' ' }}</span>
+      }
+    }
+  </span>
+}

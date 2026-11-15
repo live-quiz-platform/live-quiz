@@ -10,7 +10,9 @@
 
     <div class="welcome-content">
       <div class="welcome-copy">
-        <h2 id="welcome-title">Learn better<br>together.</h2>
+        <h2 id="welcome-title" aria-label="Learn better together.">
+          <app-animated-title [lines]="['Learn better', 'together.']" />
+        </h2>
         <p>Take part in your class quizzes.</p>
       </div>
 
@@ -25,13 +27,6 @@
 
   <section class="login-panel" aria-labelledby="login-title">
     <div class="login-box">
-      <span class="login-symbol" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M4 12h11m-4-4 4 4-4 4"
-            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-
       <header class="login-heading">
         <p class="eyebrow">SIGN IN</p>
         <h1 id="login-title">Welcome back!</h1>

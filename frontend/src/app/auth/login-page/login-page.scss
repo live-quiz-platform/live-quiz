@@ -9,7 +9,15 @@
   gap: 24px;
   min-height: 100dvh;
   padding: 24px;
-  background: var(--page-background);
+  background: linear-gradient(
+    180deg,
+    #f7fbff 0%,
+    #e8f2ff 25%,
+    #bfd7f4 48%,
+    #78a5d8 62%,
+    #2d60a0 72%,
+    #082b5c 100%
+  );
 }
 
 .welcome-panel {
@@ -65,11 +73,11 @@
   height: 9px;
   border: 2px solid var(--panel-background);
   border-radius: 50%;
-  background: var(--brand-purple);
+  background: var(--accent-color);
 }
 
 .brand-period {
-  color: var(--brand-purple);
+  color: var(--accent-color);
 }
 
 .live-badge {
@@ -87,7 +95,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--brand-purple);
+  background: var(--accent-color);
 }
 
 .welcome-content {
@@ -121,14 +129,14 @@
 
 .welcome-footer {
   gap: 10px;
-  color: var(--text-muted);
+  color: #edf5ff;
   font-size: 11px;
 }
 
 .footer-line {
   width: 24px;
   height: 1px;
-  background: var(--text-muted);
+  background: currentColor;
 }
 
 .login-panel {
@@ -142,22 +150,6 @@
 .login-box {
   width: 100%;
   max-width: 390px;
-}
-
-.login-symbol {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 32px;
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  color: var(--text-main);
-}
-
-.login-symbol svg {
-  width: 25px;
-  height: 25px;
 }
 
 .eyebrow {
@@ -185,7 +177,7 @@
 
 .login-caption {
   margin: 26px 0 0;
-  color: var(--text-muted);
+  color: #f3f7ff;
   font-size: 11px;
   line-height: 1.6;
   text-align: center;
@@ -236,10 +228,6 @@
   .login-panel {
     padding: 48px 24px 40px;
   }
-
-  .login-symbol {
-    margin-bottom: 26px;
-  }
 }
 
 @media (max-width: 360px) {
@@ -255,7 +243,7 @@
   justify-content: center;
   gap: 4px 6px;
   margin: 16px 0 0;
-  color: var(--text-main);
+  color: #ffffff;
   font-size: 13px;
   line-height: 1.6;
   text-align: center;
@@ -267,7 +255,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--text-main);
+  color: #ffffff;
   font-size: inherit;
   font-weight: 650;
   line-height: inherit;
