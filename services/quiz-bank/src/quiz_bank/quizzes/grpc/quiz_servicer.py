@@ -6,6 +6,7 @@ from quiz_bank.generated.quiz.v1 import quiz_pb2_grpc as pb_grpc
 from quiz_bank.quizzes.application.quiz_service import QuizService
 from quiz_bank.quizzes.domain.quiz import QuestionSnapshot, Quiz, QuizSettings
 from quiz_bank.shared.auth import identity_from
+from quiz_bank.shared.errors import ValidationError
 from quiz_bank.shared.grpc_errors import translate_errors
 
 TYPE_TO_PB = {
@@ -86,6 +87,15 @@ class QuizServicer(pb_grpc.QuizServiceServicer):
     def UpdateQuizTitle(self, request, context: grpc.ServicerContext):
         quiz = self._service.update_title(identity_from(context).user_id, request.id, request.title)
         return pb.UpdateQuizTitleResponse(quiz=quiz_to_pb(quiz))
+
+    @translate_errors
+    def UpdateQuizSettings(self, request, context: grpc.ServicerContext):
+        if not request.HasField("settings"):
+            raise ValidationError(["settings: este obligatoriu"])
+        quiz = self._service.update_settings(
+            identity_from(context).user_id, request.quiz_id, settings_from_pb(request.settings)
+        )
+        return pb.UpdateQuizSettingsResponse(quiz=quiz_to_pb(quiz))
 
     @translate_errors
     def AddQuestionToQuiz(self, request, context: grpc.ServicerContext):

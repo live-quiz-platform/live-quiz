@@ -21,3 +21,7 @@ Quiz-ul copiază întrebarea (snapshot frozen, cu variantele ca tupluri imutabil
 Poziția e continuă, de la 1; după ștergere sau reordonare se renumerotează.
 settings are valorile implicite 30 s / false; validarea setărilor (US-08b) o adaug în Etapa 5, dar o prevăd deja în structura QuizSettings.
 Titlul gol (sau doar spații) e invalid; un quiz are cel puțin o întrebare, deci Quiz.create cu listă goală e INVALID_ARGUMENT.
+
+timePerQuestionSeconds valid între 5 și 300 inclusiv; mesajul de eroare: settings.time_per_question_seconds: trebuie sa fie intre 5 si 300.
+La UpdateQuizSettings, câmpul settings e obligatoriu și înlocuiește ambele valori. Un time_per_question_seconds de 0 (necompletat în proto3) e invalid, nu înseamnă „implicit“.
+La CreateQuiz, dacă settings lipsește se folosesc valorile implicite (30 s / false); dacă e prezent, se validează.

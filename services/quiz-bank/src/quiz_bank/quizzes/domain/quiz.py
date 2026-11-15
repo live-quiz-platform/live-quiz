@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from quiz_bank.shared.errors import ValidationError, already_exists, failed_precondition, not_found
 
 DEFAULT_TIME_PER_QUESTION = 30
+MIN_TIME_PER_QUESTION = 5
+MAX_TIME_PER_QUESTION = 300
 
 
 def _now() -> datetime:
@@ -32,6 +34,14 @@ class QuestionSnapshot:
 class QuizSettings:
     time_per_question_seconds: int = DEFAULT_TIME_PER_QUESTION
     speed_bonus_enabled: bool = False
+
+    def validation_errors(self) -> list[str]:
+        if not MIN_TIME_PER_QUESTION <= self.time_per_question_seconds <= MAX_TIME_PER_QUESTION:
+            return [
+                "settings.time_per_question_seconds: trebuie sa fie intre "
+                f"{MIN_TIME_PER_QUESTION} si {MAX_TIME_PER_QUESTION}"
+            ]
+        return []
 
 
 def _validate_title(title: str) -> str:
@@ -62,11 +72,13 @@ class Quiz:
         snapshots: list[QuestionSnapshot],
         settings: QuizSettings | None = None,
     ) -> "Quiz":
+        settings = settings or QuizSettings()
         errors: list[str] = []
         if not title.strip():
             errors.append("title: nu poate fi gol")
         if not snapshots:
             errors.append("questions: trebuie sa existe cel putin o intrebare")
+        errors.extend(settings.validation_errors())
         if errors:
             raise ValidationError(errors)
 
@@ -80,7 +92,7 @@ class Quiz:
             owner_id=owner_id,
             title=title.strip(),
             questions=_numbered(list(snapshots)),
-            settings=settings or QuizSettings(),
+            settings=settings,
         )
 
     def _touch(self) -> None:
@@ -88,6 +100,13 @@ class Quiz:
 
     def rename(self, title: str) -> None:
         self.title = _validate_title(title)
+        self._touch()
+
+    def update_settings(self, settings: QuizSettings) -> None:
+        errors = settings.validation_errors()
+        if errors:
+            raise ValidationError(errors)
+        self.settings = settings
         self._touch()
 
     def add_question(self, snapshot: QuestionSnapshot) -> None:

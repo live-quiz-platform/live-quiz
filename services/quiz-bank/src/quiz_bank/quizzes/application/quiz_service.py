@@ -40,6 +40,12 @@ class QuizService:
         self._repo.save(quiz)
         return quiz
 
+    def update_settings(self, owner_id: str, quiz_id: str, settings: QuizSettings) -> Quiz:
+        quiz = self.get(owner_id, quiz_id)
+        quiz.update_settings(settings)
+        self._repo.save(quiz)
+        return quiz
+
     def add_question(self, owner_id: str, quiz_id: str, question_id: str) -> Quiz:
         quiz = self.get(owner_id, quiz_id)
         quiz.add_question(self._snapshot(owner_id, question_id))
