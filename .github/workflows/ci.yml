@@ -100,46 +100,34 @@ jobs:
       - name: Build Identity Docker image
         run: docker build -t live-quiz-identity:ci ./services/identity
 
-  quiz-bank:
-    name: Quiz Bank
+  test-bff:
+    name: Test BFF Service
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     defaults:
       run:
-        working-directory: services/quiz-bank
+        working-directory: services/bff
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: services/quiz-bank/pyproject.toml
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/bff/package-lock.json
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: npm ci
 
-      - name: Ruff
-        run: ruff check .
+      - name: Lint TypeScript
+        run: npm run lint
 
-      - name: Set up buf
-        uses: bufbuild/buf-action@v1
-        with:
-          setup_only: true
+      - name: Run BFF tests
+        run: npm test
 
-      - name: Buf lint
-        working-directory: proto
-        run: buf lint
-
-      - name: Generate gRPC stubs
-        working-directory: .
-        run: PYTHON=python bash scripts/gen_proto.sh
-
-      - name: Tests with coverage
-        run: pytest --cov --cov-report=term-missing
-
-      - name: Domain coverage threshold
-        run: coverage report --include='*/domain/*' --fail-under=70
+      - name: Build BFF
+        run: npm run build

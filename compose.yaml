@@ -184,29 +184,44 @@ services:
       identity-tls-init:
         condition: service_completed_successfully
 
-  quiz-bank:
+  bff:
     build:
       context: .
-      dockerfile: services/quiz-bank/Dockerfile
+      dockerfile: services/bff/Dockerfile
     restart: unless-stopped
 
     environment:
-      GRPC_PORT: "50052"
-      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME:?MONGO_ROOT_USERNAME is required}:${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}@mongodb:27017/?authSource=admin
-
-    depends_on:
-      mongodb:
-        condition: service_healthy
+      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      IDENTITY_GRPC_URL: ${IDENTITY_GRPC_URL:-identity:50051}
+      IDENTITY_TLS_CA_FILE: ${IDENTITY_TLS_CA_FILE:-/run/identity-tls/ca.crt}
+      IDENTITY_TLS_SERVER_NAME: ${IDENTITY_TLS_SERVER_NAME:-identity}
+      IDENTITY_PROTO_PATH: /app/proto/identity/v1/identity.proto
+      QUIZ_BANK_GRPC_URL: ${QUIZ_BANK_GRPC_URL:-quiz-bank:50052}
 
     ports:
-      - "${QUIZ_BANK_PORT:-50052}:50052"
+      - "${BFF_PORT:-3001}:3001"
+
+    volumes:
+      - identity_tls:/run/identity-tls:ro
+
+    depends_on:
+      identity:
+        condition: service_healthy
 
     healthcheck:
-      test: ["CMD", "python", "scripts/check_health.py", "localhost:50052"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
+
 
 volumes:
   postgres_data:
