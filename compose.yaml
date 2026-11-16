@@ -186,17 +186,28 @@ services:
 
   bff:
     build:
-      context: ./services/bff
+      context: .
+      dockerfile: services/bff/Dockerfile
     restart: unless-stopped
 
     environment:
       PORT: 3001
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
       IDENTITY_GRPC_URL: ${IDENTITY_GRPC_URL:-identity:50051}
+      IDENTITY_TLS_CA_FILE: ${IDENTITY_TLS_CA_FILE:-/run/identity-tls/ca.crt}
+      IDENTITY_TLS_SERVER_NAME: ${IDENTITY_TLS_SERVER_NAME:-identity}
+      IDENTITY_PROTO_PATH: /app/proto/identity/v1/identity.proto
       QUIZ_BANK_GRPC_URL: ${QUIZ_BANK_GRPC_URL:-quiz-bank:50052}
 
     ports:
       - "${BFF_PORT:-3001}:3001"
+
+    volumes:
+      - identity_tls:/run/identity-tls:ro
+
+    depends_on:
+      identity:
+        condition: service_healthy
 
     healthcheck:
       test:

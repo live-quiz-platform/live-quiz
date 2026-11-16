@@ -1,20 +1,31 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request = require('supertest');
 import { AppModule } from '../src/app.module';
-
+import { IDENTITY_CLIENT } from '../src/identity/identity.client';
 
 describe('BFF skeleton (e2e)', () => {
   let app: INestApplication;
 
-
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(IDENTITY_CLIENT)
+      .useValue({
+        register: jest.fn(),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
   });
 
@@ -29,7 +40,7 @@ describe('BFF skeleton (e2e)', () => {
       .expect({ status: 'ok', service: 'bff' });
   });
 
-  it('keeps users auth routes as not implemented stubs', async () => {
+  it('keeps login and me as not implemented stubs', async () => {
     await request(app.getHttpServer()).post('/api/auth/login').send({}).expect(501);
     await request(app.getHttpServer()).get('/api/me').expect(501);
   });
