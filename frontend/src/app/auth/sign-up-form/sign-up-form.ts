@@ -1,7 +1,11 @@
-import { Component, output, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, inject, output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormControl, FormGroup, ReactiveFormsModule, ValidatorFn, Validators
 } from '@angular/forms';
+import { finalize } from 'rxjs';
+import { RegistrationService } from '../registration.service';
 
 type SignUpField = 'username' | 'email' | 'password' | 'confirmPassword';
 type PasswordField = 'password' | 'confirmPassword';
@@ -24,6 +28,11 @@ export class SignUpForm {
   readonly passwordActiveChange = output<boolean>();
   protected readonly passwordVisible = signal(false);
   protected readonly confirmationVisible = signal(false);
+  protected readonly isSubmitting = signal(false);
+  protected readonly errorMessage = signal('');
+  protected readonly successMessage = signal('');
+  private readonly registration = inject(RegistrationService);
+  private readonly destroyRef = inject(DestroyRef);
   private focusedPassword: PasswordField | null = null;
 
   readonly signUpForm = new FormGroup({
@@ -71,11 +80,67 @@ export class SignUpForm {
     this.updatePasswordState();
   }
 
+  protected clearMessages(): void {
+    this.errorMessage.set('');
+    this.successMessage.set('');
+  }
+
   protected onSubmit(): void {
-    const { username, email } = this.signUpForm.controls;
+    if (this.isSubmitting()) {
+      return;
+    }
+
+    this.clearMessages();
+    const { username, email, password } = this.signUpForm.controls;
     username.setValue(username.value.trim());
     email.setValue(email.value.trim());
     this.signUpForm.markAllAsTouched();
+
+    if (this.signUpForm.invalid) {
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.signUpForm.disable({ emitEvent: false });
+    this.registration.register({
+      email: email.value,
+      password: password.value,
+      displayName: username.value
+    }).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => {
+        this.signUpForm.enable({ emitEvent: false });
+        this.isSubmitting.set(false);
+      })
+    ).subscribe({
+      next: () => {
+        this.signUpForm.reset();
+        this.passwordVisible.set(false);
+        this.confirmationVisible.set(false);
+        this.focusedPassword = null;
+        this.updatePasswordState();
+        this.successMessage.set('Your account has been created.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorMessage.set(this.getErrorMessage(error));
+      }
+    });
+  }
+
+  private getErrorMessage(error: HttpErrorResponse): string {
+    switch (error.status) {
+      case 400:
+        return 'Check your email, username and password, then try again.';
+      case 409:
+        return 'An account with this email already exists.';
+      case 0:
+        return 'Could not reach the server. Please try again.';
+      case 502:
+      case 503:
+        return 'Registration is temporarily unavailable. Please try again later.';
+      default:
+        return 'Could not create your account. Please try again.';
+    }
   }
 
   private updatePasswordState(): void {

@@ -12,6 +12,22 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+## Registration API
+
+The sign-up form calls `POST /api/auth/register`. The request uses `email`, `password` and `displayName`; password confirmation stays in the frontend.
+
+For local development, configure the root `.env` from `.env.example`, then start the backend from the repository root:
+
+```bash
+docker compose up -d --build bff
+```
+
+The Angular development server forwards `/api` requests to `http://127.0.0.1:3001` using `src/proxy.conf.json`. Restart the development server after changing this file.
+
+For a production deployment, route `/api` to the BFF on the same origin as the frontend.
+
+Sign in and password reset are not connected yet. See the [BFF contract](../services/bff/CONTRACT.md) for the registration request and response.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
