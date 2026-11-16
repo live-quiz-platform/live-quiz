@@ -192,7 +192,7 @@ services:
     environment:
       PORT: 3001
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
-      USERS_GRPC_URL: ${USERS_GRPC_URL:-users:50051}
+      IDENTITY_GRPC_URL: ${IDENTITY_GRPC_URL:-identity:50051}
       QUIZ_BANK_GRPC_URL: ${QUIZ_BANK_GRPC_URL:-quiz-bank:50052}
 
     ports:

@@ -11,4 +11,6 @@ npm install
 npm run start:dev
 ```
 
-`GET /api/health` works. Users and quiz-bank routes return 501 until gRPC clients are wired.
+- `GET /api/health` works
+- users / quiz-bank routes return 501 until gRPC clients are wired
+- tests: `npm test`
