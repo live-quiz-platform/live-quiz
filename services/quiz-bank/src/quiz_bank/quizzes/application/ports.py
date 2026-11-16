@@ -1,0 +1,19 @@
+from typing import Protocol
+
+from quiz_bank.quizzes.domain.quiz import QuestionSnapshot, Quiz
+
+
+class QuestionReader(Protocol):
+    def read(self, question_id: str, owner_id: str) -> QuestionSnapshot | None: ...
+
+
+class QuizRepository(Protocol):
+    def add(self, quiz: Quiz) -> Quiz: ...
+
+    def get(self, quiz_id: str, owner_id: str) -> Quiz | None: ...
+
+    def save(self, quiz: Quiz) -> None: ...
+
+    def delete(self, quiz_id: str, owner_id: str) -> bool: ...
+
+    def list(self, owner_id: str, skip: int, limit: int) -> tuple[list[Quiz], int]: ...

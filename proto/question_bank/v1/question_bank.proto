@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package question_bank.v1;
+
+enum QuestionType {
+  QUESTION_TYPE_UNSPECIFIED = 0;
+  QUESTION_TYPE_SINGLE_CHOICE = 1;
+  QUESTION_TYPE_TRUE_FALSE = 2;
+}
+
+enum Difficulty {
+  DIFFICULTY_UNSPECIFIED = 0;
+  DIFFICULTY_EASY = 1;
+  DIFFICULTY_MEDIUM = 2;
+  DIFFICULTY_HARD = 3;
+}
+
+message AnswerOption {
+  string id = 1;
+  string text = 2;
+  bool is_correct = 3;
+}
+
+message Question {
+  string id = 1;
+  string owner_id = 2;
+  QuestionType type = 3;
+  string text = 4;
+  repeated AnswerOption options = 5;
+  Difficulty difficulty = 6;
+  repeated string tags = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message CreateQuestionRequest {
+  QuestionType type = 1;
+  string text = 2;
+  repeated AnswerOption options = 3;
+  Difficulty difficulty = 4;
+  repeated string tags = 5;
+}
+
+message CreateQuestionResponse {
+  Question question = 1;
+}
+
+message UpdateQuestionRequest {
+  string id = 1;
+  QuestionType type = 2;
+  string text = 3;
+  repeated AnswerOption options = 4;
+  Difficulty difficulty = 5;
+  repeated string tags = 6;
+}
+
+message UpdateQuestionResponse {
+  Question question = 1;
+}
+
+message DeleteQuestionRequest {
+  string id = 1;
+}
+
+message DeleteQuestionResponse {}
+
+message GetQuestionRequest {
+  string id = 1;
+}
+
+message GetQuestionResponse {
+  Question question = 1;
+}
+
+message ListQuestionsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListQuestionsResponse {
+  repeated Question questions = 1;
+  int32 total = 2;
+}
+
+service QuestionService {
+  rpc CreateQuestion(CreateQuestionRequest) returns (CreateQuestionResponse);
+  rpc UpdateQuestion(UpdateQuestionRequest) returns (UpdateQuestionResponse);
+  rpc DeleteQuestion(DeleteQuestionRequest) returns (DeleteQuestionResponse);
+  rpc GetQuestion(GetQuestionRequest) returns (GetQuestionResponse);
+  rpc ListQuestions(ListQuestionsRequest) returns (ListQuestionsResponse);
+}

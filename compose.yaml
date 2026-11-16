@@ -184,6 +184,30 @@ services:
       identity-tls-init:
         condition: service_completed_successfully
 
+  quiz-bank:
+    build:
+      context: .
+      dockerfile: services/quiz-bank/Dockerfile
+    restart: unless-stopped
+
+    environment:
+      GRPC_PORT: "50052"
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME:?MONGO_ROOT_USERNAME is required}:${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}@mongodb:27017/?authSource=admin
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+    ports:
+      - "${QUIZ_BANK_PORT:-50052}:50052"
+
+    healthcheck:
+      test: ["CMD", "python", "scripts/check_health.py", "localhost:50052"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
 volumes:
   postgres_data:
   mongodb_data:
