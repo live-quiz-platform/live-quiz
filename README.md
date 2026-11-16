@@ -14,6 +14,7 @@ npm run start:dev
 - `GET /api/health`
 - `POST /api/auth/register` → identity gRPC `Register` (needs identity + TLS CA)
 - login / me / quiz-bank routes return 501 until wired
+- FE contract: [`services/bff/CONTRACT.md`](services/bff/CONTRACT.md)
 - tests: `npm test`
 
 ### Local register smoke (identity in Docker)
