@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package quiz.v1;
+
+import "question_bank/v1/question_bank.proto";
+
+message QuizSettings {
+  int32 time_per_question_seconds = 1;
+  bool speed_bonus_enabled = 2;
+}
+
+message QuizQuestion {
+  int32 position = 1;
+  string source_question_id = 2;
+  question_bank.v1.QuestionType type = 3;
+  string text = 4;
+  repeated question_bank.v1.AnswerOption options = 5;
+  question_bank.v1.Difficulty difficulty = 6;
+  repeated string tags = 7;
+}
+
+message Quiz {
+  string id = 1;
+  string owner_id = 2;
+  string title = 3;
+  repeated QuizQuestion questions = 4;
+  QuizSettings settings = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message CreateQuizRequest {
+  string title = 1;
+  repeated string question_ids = 2;
+  optional QuizSettings settings = 3;
+}
+
+message CreateQuizResponse {
+  Quiz quiz = 1;
+}
+
+message GetQuizRequest {
+  string id = 1;
+}
+
+message GetQuizResponse {
+  Quiz quiz = 1;
+}
+
+message ListQuizzesRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListQuizzesResponse {
+  repeated Quiz quizzes = 1;
+  int32 total = 2;
+}
+
+message UpdateQuizTitleRequest {
+  string id = 1;
+  string title = 2;
+}
+
+message UpdateQuizTitleResponse {
+  Quiz quiz = 1;
+}
+
+message AddQuestionToQuizRequest {
+  string quiz_id = 1;
+  string question_id = 2;
+}
+
+message AddQuestionToQuizResponse {
+  Quiz quiz = 1;
+}
+
+message RemoveQuestionFromQuizRequest {
+  string quiz_id = 1;
+  string question_id = 2;
+}
+
+message RemoveQuestionFromQuizResponse {
+  Quiz quiz = 1;
+}
+
+message ReorderQuizQuestionsRequest {
+  string quiz_id = 1;
+  repeated string question_ids = 2;
+}
+
+message ReorderQuizQuestionsResponse {
+  Quiz quiz = 1;
+}
+
+message UpdateQuizSettingsRequest {
+  string quiz_id = 1;
+  QuizSettings settings = 2;
+}
+
+message UpdateQuizSettingsResponse {
+  Quiz quiz = 1;
+}
+
+message DeleteQuizRequest {
+  string id = 1;
+}
+
+message DeleteQuizResponse {}
+
+service QuizService {
+  rpc CreateQuiz(CreateQuizRequest) returns (CreateQuizResponse);
+  rpc GetQuiz(GetQuizRequest) returns (GetQuizResponse);
+  rpc ListQuizzes(ListQuizzesRequest) returns (ListQuizzesResponse);
+  rpc UpdateQuizTitle(UpdateQuizTitleRequest) returns (UpdateQuizTitleResponse);
+  rpc AddQuestionToQuiz(AddQuestionToQuizRequest) returns (AddQuestionToQuizResponse);
+  rpc RemoveQuestionFromQuiz(RemoveQuestionFromQuizRequest) returns (RemoveQuestionFromQuizResponse);
+  rpc ReorderQuizQuestions(ReorderQuizQuestionsRequest) returns (ReorderQuizQuestionsResponse);
+  rpc UpdateQuizSettings(UpdateQuizSettingsRequest) returns (UpdateQuizSettingsResponse);
+  rpc DeleteQuiz(DeleteQuizRequest) returns (DeleteQuizResponse);
+}
