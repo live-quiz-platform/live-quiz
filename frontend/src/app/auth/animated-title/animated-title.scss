@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+.title-line {
+  display: block;
+}
+
+.title-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.title-letter {
+  display: inline-block;
+  animation: letter-hop 540ms ease-in-out backwards;
+  animation-delay: calc(var(--title-delay, 120ms) + var(--letter-index, 0) * 55ms);
+}
+
+@keyframes letter-hop {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-8px);
+  }
+
+  70% {
+    transform: translateY(1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-letter {
+    animation: none;
+  }
+}

@@ -1,0 +1,13 @@
+.login-panel {
+  padding-block: 28px;
+}
+
+@media (max-width: 760px) {
+  .login-page {
+    align-content: start;
+  }
+
+  .login-panel {
+    padding-block: 36px;
+  }
+}
