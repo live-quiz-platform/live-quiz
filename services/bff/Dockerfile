@@ -14,6 +14,7 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV IDENTITY_PROTO_PATH=/app/proto/identity/v1/identity.proto
+ENV QUIZ_BANK_PROTO_ROOT=/app/proto
 COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
