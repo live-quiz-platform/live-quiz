@@ -35,6 +35,13 @@ func (m *mockUserRepository) Create(
 	return newUser, nil
 }
 
+func (m *mockUserRepository) FindByEmail(
+    ctx context.Context,
+    email string,
+) (user.User, error) {
+    return user.User{}, user.ErrInvalidCredentials
+}
+
 func TestRegister_Success(t *testing.T) {
 	repository := &mockUserRepository{}
 	registrationService := user.NewRegistrationService(repository)

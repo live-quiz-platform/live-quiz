@@ -4,35 +4,10 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 )
 
-type fakeRepository struct {
-	createdUser User
-	createErr   error
-	called      bool
-}
-
-func (r *fakeRepository) Create(
-	ctx context.Context,
-	newUser User,
-) (User, error) {
-	r.called = true
-
-	if r.createErr != nil {
-		return User{}, r.createErr
-	}
-
-	newUser.ID = "test-user-id"
-	newUser.CreatedAt = time.Now()
-
-	r.createdUser = newUser
-
-	return newUser, nil
-}
-
 func TestRegistrationServiceRegister(t *testing.T) {
-	repository := &fakeRepository{}
+	repository := &FakeRepository{}
 	service := NewRegistrationService(repository)
 
 	result, err := service.Register(
@@ -125,7 +100,7 @@ func TestRegistrationServiceRegisterInvalidInput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repository := &fakeRepository{}
+			repository := &FakeRepository{}
 			service := NewRegistrationService(repository)
 
 			_, err := service.Register(
@@ -151,7 +126,7 @@ func TestRegistrationServiceRegisterInvalidInput(t *testing.T) {
 }
 
 func TestRegistrationServiceRegisterDuplicateEmail(t *testing.T) {
-	repository := &fakeRepository{
+	repository := &FakeRepository{
 		createErr: ErrEmailAlreadyExists,
 	}
 	service := NewRegistrationService(repository)
@@ -171,7 +146,7 @@ func TestRegistrationServiceRegisterDuplicateEmail(t *testing.T) {
 func TestRegistrationServiceRegisterRepositoryError(t *testing.T) {
 	expectedErr := errors.New("database unavailable")
 
-	repository := &fakeRepository{
+	repository := &FakeRepository{
 		createErr: expectedErr,
 	}
 	service := NewRegistrationService(repository)
