@@ -1,0 +1,3 @@
+ALTER TABLE users
+ADD COLUMN role_id SMALLINT NOT NULL
+REFERENCES roles(id);
