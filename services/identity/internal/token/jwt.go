@@ -51,7 +51,7 @@ func (m *Manager) Generate(userID, role string) (string, time.Time, error) {
 	expiresAt := now.Add(m.expiration)
 
 	claims := Claims{
-		Role: role,
+		Role:      role,
 		Subject:   userID,
 		IssuedAt:  jwt.NewNumericDate(now),
 		ExpiresAt: jwt.NewNumericDate(expiresAt),

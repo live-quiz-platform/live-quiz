@@ -7,11 +7,11 @@ import (
 )
 
 type AuthenticationResult struct {
-	ID string
-	Email string
+	ID          string
+	Email       string
 	DisplayName string
-	Role string
-	CreatedAt time.Time
+	Role        string
+	CreatedAt   time.Time
 }
 
 type AuthenticationService struct {
