@@ -8,8 +8,8 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { CreateQuizInput } from './quiz-bank.client';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { CreateQuizDto } from './dto/create-quiz.dto';
 import { ListQuestionsQueryDto } from './dto/list-questions-query.dto';
 import { QuizBankService } from './quiz-bank.service';
 
@@ -50,7 +50,17 @@ export class QuizBankController {
   }
 
   @Post('quizzes')
-  createQuiz(@Body() body: CreateQuizInput) {
-    return this.quizBankService.createQuiz(DEV_TEACHER, body);
+  @HttpCode(HttpStatus.CREATED)
+  createQuiz(@Body() body: CreateQuizDto) {
+    return this.quizBankService.createQuiz(DEV_TEACHER, {
+      title: body.title,
+      questionIds: body.questionIds,
+      settings: body.settings
+        ? {
+            timePerQuestionSeconds: body.settings.timePerQuestionSeconds,
+            speedBonusEnabled: body.settings.speedBonusEnabled,
+          }
+        : undefined,
+    });
   }
 }
