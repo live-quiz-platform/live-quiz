@@ -1,3 +1,4 @@
+
 package config
 
 import (
@@ -10,6 +11,7 @@ import (
 type Config struct {
 	Postgres PostgresConfig
 	GRPC     GRPCConfig
+	JWT      JWTConfig
 }
 
 type PostgresConfig struct {
@@ -27,6 +29,11 @@ type GRPCConfig struct {
 	TLSKeyFile  string
 }
 
+type JWTConfig struct {
+	Secret            string
+	ExpirationMinutes int
+}
+
 func Load() (Config, error) {
 	port, err := portFromEnv("POSTGRES_DB_PORT")
 	if err != nil {
@@ -36,6 +43,13 @@ func Load() (Config, error) {
 	grpcPort, err := portFromEnv("IDENTITY_GRPC_PORT")
 	if err != nil {
 		return Config{}, err
+	}
+
+	jwtExpiration, err := strconv.Atoi(
+		strings.TrimSpace(os.Getenv("IDENTITY_JWT_EXPIRATION_MINUTES")),
+	)
+	if err != nil || jwtExpiration <= 0 {
+		return Config{}, fmt.Errorf("invalid IDENTITY_JWT_EXPIRATION_MINUTES")
 	}
 
 	cfg := Config{
@@ -51,6 +65,10 @@ func Load() (Config, error) {
 			Port:        grpcPort,
 			TLSCertFile: strings.TrimSpace(os.Getenv("IDENTITY_TLS_CERT_FILE")),
 			TLSKeyFile:  strings.TrimSpace(os.Getenv("IDENTITY_TLS_KEY_FILE")),
+		},
+		JWT: JWTConfig{
+			Secret:            os.Getenv("IDENTITY_JWT_SECRET"),
+			ExpirationMinutes: jwtExpiration,
 		},
 	}
 
@@ -69,6 +87,8 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("missing required environment variable: IDENTITY_TLS_CERT_FILE")
 	case cfg.GRPC.TLSKeyFile == "":
 		return Config{}, fmt.Errorf("missing required environment variable: IDENTITY_TLS_KEY_FILE")
+	case len(cfg.JWT.Secret) < 32:
+		return Config{}, fmt.Errorf("IDENTITY_JWT_SECRET must contain at least 32 characters")
 	}
 
 	return cfg, nil
