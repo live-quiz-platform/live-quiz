@@ -98,8 +98,9 @@ export class GrpcQuizBankClient implements QuizBankClient, OnModuleDestroy {
     page = 1,
     pageSize = 20,
   ): Promise<QuestionList> {
+    const client = this.getQuestionClient();
     return this.call(() =>
-      this.unary(this.getQuestionClient().listQuestions, identity, {
+      this.unary(client, client.listQuestions, identity, {
         page,
         pageSize,
       }),
@@ -115,8 +116,9 @@ export class GrpcQuizBankClient implements QuizBankClient, OnModuleDestroy {
     identity: CallerIdentity,
     input: CreateQuestionInput,
   ): Promise<Question> {
+    const client = this.getQuestionClient();
     return this.call(() =>
-      this.unary(this.getQuestionClient().createQuestion, identity, {
+      this.unary(client, client.createQuestion, identity, {
         type: this.toProtoQuestionType(input.type),
         text: input.text,
         options: input.options.map((option) => ({
@@ -132,8 +134,9 @@ export class GrpcQuizBankClient implements QuizBankClient, OnModuleDestroy {
   }
 
   getQuiz(identity: CallerIdentity, quizId: string): Promise<Quiz> {
+    const client = this.getQuizClient();
     return this.call(() =>
-      this.unary(this.getQuizClient().getQuiz, identity, { id: quizId }),
+      this.unary(client, client.getQuiz, identity, { id: quizId }),
     ).then((response) => this.toQuiz(response.quiz));
   }
 
@@ -150,8 +153,9 @@ export class GrpcQuizBankClient implements QuizBankClient, OnModuleDestroy {
       };
     }
 
+    const client = this.getQuizClient();
     return this.call(() =>
-      this.unary(this.getQuizClient().createQuiz, identity, request),
+      this.unary(client, client.createQuiz, identity, request),
     ).then((response) => this.toQuiz(response.quiz));
   }
 
@@ -169,6 +173,7 @@ export class GrpcQuizBankClient implements QuizBankClient, OnModuleDestroy {
   }
 
   private unary<TReq, TRes>(
+    client: object,
     method: GrpcUnary<TReq, TRes>,
     identity: CallerIdentity,
     request: TReq,
@@ -178,7 +183,7 @@ export class GrpcQuizBankClient implements QuizBankClient, OnModuleDestroy {
     metadata.set('x-user-role', this.toQuizBankRole(identity.role));
 
     return new Promise((resolvePromise, reject) => {
-      method(request, metadata, (error, response) => {
+      method.call(client, request, metadata, (error, response) => {
         if (error) {
           reject(error);
           return;
@@ -255,7 +260,7 @@ export class GrpcQuizBankClient implements QuizBankClient, OnModuleDestroy {
   private resolveProtoRoot(): string {
     const configured = this.config.get<string>('QUIZ_BANK_PROTO_ROOT');
     const candidates = [
-      configured,
+      configured ? resolve(process.cwd(), configured) : undefined,
       resolve(process.cwd(), 'proto'),
       resolve(process.cwd(), '../../proto'),
       join(__dirname, '../../../../proto'),
