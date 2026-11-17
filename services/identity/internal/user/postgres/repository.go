@@ -27,24 +27,39 @@ func (r *Repository) Create(
 	newUser user.User,
 ) (user.User, error) {
 	const query = `
-		INSERT INTO users (
-			id,
-			email,
-			password_hash,
-			display_name
+		WITH inserted_user AS (
+			INSERT INTO users (
+				id,
+				email,
+				password_hash,
+				display_name,
+				role_id
+			)
+			SELECT
+				gen_random_uuid(),
+				$1,
+				$2,
+				$3,
+				r.id
+			FROM roles r
+			WHERE r.name = 'student'
+			RETURNING
+				id,
+				email,
+				password_hash,
+				display_name,
+				created_at,
+				role_id
 		)
-		VALUES (
-			gen_random_uuid(),
-			$1,
-			$2,
-			$3
-		)
-		RETURNING
-			id::text,
-			email,
-			password_hash,
-			display_name,
-			created_at
+		SELECT
+			u.id::text,
+			u.email,
+			u.password_hash,
+			u.display_name,
+			u.created_at,
+			r.name
+		FROM inserted_user u
+		JOIN roles r ON r.id = u.role_id
 	`
 
 	var createdUser user.User
@@ -60,6 +75,7 @@ func (r *Repository) Create(
 		&createdUser.Email,
 		&createdUser.PasswordHash,
 		&createdUser.DisplayName,
+		&createdUser.Role,
 		&createdUser.CreatedAt,
 	)
 	if err != nil {
@@ -81,13 +97,15 @@ func (r *Repository) FindByEmail(
 ) (user.User, error) {
 	const query = `
 		SELECT
-			id::text,
-			email,
-			password_hash,
-			display_name,
-			created_at,
-		FROM users
-		WHERE email = $1
+			u.id::text,
+			u.email,
+			u.password_hash,
+			u.display_name,
+			u.created_at,
+			r.name
+		FROM users u
+		JOIN roles r ON r.id = u.role_id
+		WHERE u.email = $1
 	`
 
 	var foundUser user.User
@@ -102,6 +120,7 @@ func (r *Repository) FindByEmail(
         &foundUser.PasswordHash,
         &foundUser.DisplayName,
         &foundUser.CreatedAt,
+		&foundUser.Role,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

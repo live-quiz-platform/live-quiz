@@ -82,8 +82,21 @@ func TestRepository_Create(t *testing.T) {
 		)
 	}
 
+	if createdUser.Role != "student" {
+		t.Errorf("expected role student, got %q", createdUser.Role)
+	}
+
 	if createdUser.CreatedAt.IsZero() {
 		t.Error("expected generated creation timestamp")
+	}
+
+	foundUser, err := repo.FindByEmail(ctx, newUser.Email)
+	if err != nil {
+		t.Fatalf("find created user by email: %v", err)
+	}
+
+	if foundUser.Role != "student" {
+		t.Errorf("expected role student when finding user, got %q", foundUser.Role)
 	}
 
 	_, err = repo.Create(ctx, newUser)

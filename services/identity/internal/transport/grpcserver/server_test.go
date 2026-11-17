@@ -2,6 +2,7 @@ package grpcserver
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -9,13 +10,30 @@ import (
 	"google.golang.org/grpc/status"
 
 	identityv1 "github.com/live-quiz-platform/live-quiz/services/identity/api/identity/v1"
+	"github.com/live-quiz-platform/live-quiz/services/identity/internal/token"
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/user"
 )
 
 type mockUserRepository struct {
 	createdUser user.User
+	foundUser   user.User
 	err         error
 	called      bool
+}
+
+func newTestServer(repository *mockUserRepository) *Server {
+	registrationService := user.NewRegistrationService(repository)
+	authenticationService := user.NewAuthenticationService(repository)
+
+	tokenManager, err := token.NewManager(
+		"this-is-a-test-secret-with-at-least-32-characters",
+		15*time.Minute,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return NewServer(registrationService, authenticationService, tokenManager)
 }
 
 func (m *mockUserRepository) Create(
@@ -36,16 +54,23 @@ func (m *mockUserRepository) Create(
 }
 
 func (m *mockUserRepository) FindByEmail(
-    ctx context.Context,
-    email string,
+	ctx context.Context,
+	email string,
 ) (user.User, error) {
-    return user.User{}, user.ErrInvalidCredentials
+	if m.err != nil {
+		return user.User{}, m.err
+	}
+
+	if m.foundUser.ID == "" {
+		return user.User{}, user.ErrInvalidCredentials
+	}
+
+	return m.foundUser, nil
 }
 
 func TestRegister_Success(t *testing.T) {
 	repository := &mockUserRepository{}
-	registrationService := user.NewRegistrationService(repository)
-	server := NewServer(registrationService)
+	server := newTestServer(repository)
 
 	response, err := server.Register(context.Background(), &identityv1.RegisterRequest{
 		Email:       "student@example.com",
@@ -143,8 +168,7 @@ func TestRegister_Errors(t *testing.T) {
 				err: tt.repositoryErr,
 			}
 
-			registrationService := user.NewRegistrationService(repository)
-			server := NewServer(registrationService)
+			server := newTestServer(repository)
 
 			_, err := server.Register(context.Background(), tt.request)
 
@@ -166,11 +190,148 @@ func TestRegister_Errors(t *testing.T) {
 }
 
 func TestRegister_NilRequest(t *testing.T) {
-	server := NewServer(user.NewRegistrationService(&mockUserRepository{}))
+	server := newTestServer(&mockUserRepository{})
 
 	_, err := server.Register(context.Background(), nil)
 
 	if status.Code(err) != codes.InvalidArgument {
 		t.Errorf("expected InvalidArgument, got %v", status.Code(err))
+	}
+}
+
+func TestLogin_Success(t *testing.T) {
+	password := "securepass123"
+
+	passwordHash, err := user.HashPassword(password)
+	if err != nil {
+		t.Fatalf("failed to hash password: %v", err)
+	}
+
+	repository := &mockUserRepository{
+		foundUser: user.User{
+			ID:           "test-user-id",
+			Email:        "student@example.com",
+			PasswordHash: passwordHash,
+			DisplayName:  "Student Test",
+			Role:         "student",
+			CreatedAt:    time.Now(),
+		},
+	}
+
+	server := newTestServer(repository)
+
+	response, err := server.Login(context.Background(), &identityv1.LoginRequest{
+		Email:    "student@example.com",
+		Password: password,
+	})
+
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	if response == nil {
+		t.Fatal("expected a response, got nil")
+	}
+
+	if response.AccessToken == "" {
+		t.Error("expected an access token")
+	}
+
+	if response.UserId != "test-user-id" {
+		t.Errorf("expected user ID test-user-id, got %s", response.UserId)
+	}
+
+	if response.Role != "student" {
+		t.Errorf("expected role student, got %s", response.Role)
+	}
+
+	if response.ExpiresAt <= time.Now().Unix() {
+		t.Error("expected expiration time to be in the future")
+	}
+}
+
+func TestLogin_InvalidPassword(t *testing.T) {
+	passwordHash, err := user.HashPassword("correct-password")
+	if err != nil {
+		t.Fatalf("failed to hash password: %v", err)
+	}
+
+	repository := &mockUserRepository{
+		foundUser: user.User{
+			ID:           "test-user-id",
+			Email:        "student@example.com",
+			PasswordHash: passwordHash,
+			DisplayName:  "Student Test",
+			Role:         "student",
+		},
+	}
+
+	server := newTestServer(repository)
+
+	_, err = server.Login(context.Background(), &identityv1.LoginRequest{
+		Email:    "student@example.com",
+		Password: "wrong-password",
+	})
+
+	if status.Code(err) != codes.Unauthenticated {
+		t.Errorf("expected Unauthenticated, got %v", status.Code(err))
+	}
+
+	if status.Convert(err).Message() != "invalid email or password" {
+		t.Errorf("unexpected error message: %v", status.Convert(err).Message())
+	}
+}
+
+func TestLogin_UnknownEmail(t *testing.T) {
+	repository := &mockUserRepository{}
+
+	server := newTestServer(repository)
+
+	_, err := server.Login(context.Background(), &identityv1.LoginRequest{
+		Email:    "unknown@example.com",
+		Password: "securepass123",
+	})
+
+	if status.Code(err) != codes.Unauthenticated {
+		t.Errorf("expected Unauthenticated, got %v", status.Code(err))
+	}
+
+	if status.Convert(err).Message() != "invalid email or password" {
+		t.Errorf("unexpected error message: %v", status.Convert(err).Message())
+	}
+}
+
+func TestLogin_NilRequest(t *testing.T) {
+	server := newTestServer(&mockUserRepository{})
+
+	_, err := server.Login(context.Background(), nil)
+
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("expected InvalidArgument, got %v", status.Code(err))
+	}
+
+	if status.Convert(err).Message() != "request is required" {
+		t.Errorf("unexpected error message: %v", status.Convert(err).Message())
+	}
+}
+
+func TestLogin_RepositoryError(t *testing.T) {
+	repository := &mockUserRepository{
+		err: errors.New("database connection failed"),
+	}
+
+	server := newTestServer(repository)
+
+	_, err := server.Login(context.Background(), &identityv1.LoginRequest{
+		Email:    "student@example.com",
+		Password: "securepass123",
+	})
+
+	if status.Code(err) != codes.Internal {
+		t.Errorf("expected Internal, got %v", status.Code(err))
+	}
+
+	if status.Convert(err).Message() != "authentication failed" {
+		t.Errorf("unexpected error message: %v", status.Convert(err).Message())
 	}
 }

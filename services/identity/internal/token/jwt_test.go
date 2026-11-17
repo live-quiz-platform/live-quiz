@@ -106,3 +106,18 @@ func TestValidateInvalidSignature(t *testing.T) {
 		t.Fatal("Validate() should reject a token signed with a different secret")
 	}
 }
+
+func TestValidateMalformedToken(t *testing.T) {
+	manager, err := NewManager(
+		"this-is-a-test-secret-with-more-than-32-characters",
+		15*time.Minute,
+	)
+	if err != nil {
+		t.Fatalf("NewManager() error = %v", err)
+	}
+
+	_, err = manager.Validate("this-is-not-a-valid-jwt")
+	if err == nil {
+		t.Fatal("Validate() should reject a malformed token")
+	}
+}

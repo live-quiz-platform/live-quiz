@@ -7,5 +7,6 @@ type User struct {
 	Email        string
 	PasswordHash string
 	DisplayName  string
+	Role         string
 	CreatedAt    time.Time
 }

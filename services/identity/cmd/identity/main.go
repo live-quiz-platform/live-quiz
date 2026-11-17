@@ -17,6 +17,7 @@ import (
 
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/config"
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/database"
+	"github.com/live-quiz-platform/live-quiz/services/identity/internal/token"
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/transport/grpcserver"
 	"github.com/live-quiz-platform/live-quiz/services/identity/internal/user"
 	userpostgres "github.com/live-quiz-platform/live-quiz/services/identity/internal/user/postgres"
@@ -51,8 +52,21 @@ func run() error {
 	repository := userpostgres.NewRepository(pool)
 
 	registrationService := user.NewRegistrationService(repository)
+	authenticationService := user.NewAuthenticationService(repository)
 
-	grpcHandler := grpcserver.NewServer(registrationService)
+	tokenManager, err := token.NewManager(
+		cfg.JWT.Secret,
+		time.Duration(cfg.JWT.ExpirationMinutes)*time.Minute,
+	)
+	if err != nil {
+		return fmt.Errorf("initialize token manager: %w", err)
+	}
+
+	grpcHandler := grpcserver.NewServer(
+		registrationService,
+		authenticationService,
+		tokenManager,
+	)
 
 	grpcServer, healthServer, err := newGRPCServer(grpcHandler, cfg.GRPC)
 	if err != nil {

@@ -15,6 +15,8 @@ func TestLoad_Success(t *testing.T) {
 	t.Setenv("IDENTITY_GRPC_PORT", "50051")
 	t.Setenv("IDENTITY_TLS_CERT_FILE", "/run/secrets/identity_tls_cert")
 	t.Setenv("IDENTITY_TLS_KEY_FILE", "/run/secrets/identity_tls_key")
+	t.Setenv("IDENTITY_JWT_SECRET", "this-is-a-test-secret-with-at-least-32-characters")
+	t.Setenv("IDENTITY_JWT_EXPIRATION_MINUTES", "15")
 
 	cfg, err := Load()
 	if err != nil {
@@ -36,6 +38,12 @@ func TestLoad_Success(t *testing.T) {
 	}
 	if cfg.GRPC.TLSKeyFile != "/run/secrets/identity_tls_key" {
 		t.Errorf("Unexpected gRPC TLS key file: %s", cfg.GRPC.TLSKeyFile)
+	}
+	if cfg.JWT.Secret != "this-is-a-test-secret-with-at-least-32-characters" {
+		t.Errorf("Unexpected JWT secret")
+	}
+	if cfg.JWT.ExpirationMinutes != 15 {
+		t.Errorf("Expected JWT expiration 15 minutes, got %d", cfg.JWT.ExpirationMinutes)
 	}
 }
 
@@ -87,6 +95,8 @@ func TestLoad_MissingTLSFiles(t *testing.T) {
 			t.Setenv("POSTGRES_SSL_MODE", "disable")
 			t.Setenv("IDENTITY_TLS_CERT_FILE", tt.certFile)
 			t.Setenv("IDENTITY_TLS_KEY_FILE", tt.keyFile)
+			t.Setenv("IDENTITY_JWT_SECRET", "this-is-a-test-secret-with-at-least-32-characters")
+			t.Setenv("IDENTITY_JWT_EXPIRATION_MINUTES", "15")
 
 			_, err := Load()
 			if err == nil || err.Error() != tt.wantErr {

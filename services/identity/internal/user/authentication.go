@@ -10,6 +10,7 @@ type AuthenticationResult struct {
 	ID string
 	Email string
 	DisplayName string
+	Role string
 	CreatedAt time.Time
 }
 
@@ -48,6 +49,7 @@ func (s *AuthenticationService) Authenticate(
 		ID:          authenticatedUser.ID,
 		Email:       authenticatedUser.Email,
 		DisplayName: authenticatedUser.DisplayName,
+		Role:        authenticatedUser.Role,
 		CreatedAt:   authenticatedUser.CreatedAt,
 	}, nil
 }
