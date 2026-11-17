@@ -95,6 +95,9 @@ jobs:
           # The database test only validates these paths; TLS tests create their own files.
           IDENTITY_TLS_CERT_FILE: /tmp/identity.crt
           IDENTITY_TLS_KEY_FILE: /tmp/identity.key
+          IDENTITY_JWT_SECRET: ci-test-secret-with-at-least-32-characters
+          IDENTITY_JWT_EXPIRATION_MINUTES: 15
+          IDENTITY_REFRESH_TOKEN_EXPIRATION_DAYS: 7
         run: go test -race -cover ./...
 
       - name: Build Identity Docker image
