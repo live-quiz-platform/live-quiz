@@ -9,12 +9,26 @@ type FakeRepository struct {
 	createdUser User
 	foundUser   User
 
-	createErr error
-	findErr   error
+	createdRefreshToken RefreshToken
+	rotatedUser         User
 
-	called     bool
-	findCalled bool
-	foundEmail string
+	createErr      error
+	findErr        error
+	createTokenErr error
+	rotateTokenErr error
+	revokeTokenErr error
+
+	called            bool
+	findCalled        bool
+	createTokenCalled bool
+	rotateTokenCalled bool
+	revokeTokenCalled bool
+
+	foundEmail        string
+	rotatedTokenHash  string
+	newTokenHash      string
+	newTokenExpiresAt time.Time
+	revokedTokenHash  string
 }
 
 func (r *FakeRepository) Create(
@@ -51,4 +65,47 @@ func (r *FakeRepository) FindByEmail(
 	}
 
 	return r.foundUser, nil
+}
+
+func (r *FakeRepository) CreateRefreshToken(
+	ctx context.Context,
+	token RefreshToken,
+) error {
+	r.createTokenCalled = true
+
+	if r.createTokenErr != nil {
+		return r.createTokenErr
+	}
+
+	r.createdRefreshToken = token
+
+	return nil
+}
+
+func (r *FakeRepository) RotateRefreshToken(
+	ctx context.Context,
+	currentTokenHash string,
+	newTokenHash string,
+	expiresAt time.Time,
+) (User, error) {
+	r.rotateTokenCalled = true
+	r.rotatedTokenHash = currentTokenHash
+	r.newTokenHash = newTokenHash
+	r.newTokenExpiresAt = expiresAt
+
+	if r.rotateTokenErr != nil {
+		return User{}, r.rotateTokenErr
+	}
+
+	return r.rotatedUser, nil
+}
+
+func (r *FakeRepository) RevokeRefreshToken(
+	ctx context.Context,
+	tokenHash string,
+) error {
+	r.revokeTokenCalled = true
+	r.revokedTokenHash = tokenHash
+
+	return r.revokeTokenErr
 }

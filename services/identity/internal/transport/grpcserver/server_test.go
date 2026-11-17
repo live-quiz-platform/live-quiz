@@ -15,10 +15,17 @@ import (
 )
 
 type mockUserRepository struct {
-	createdUser user.User
-	foundUser   user.User
-	err         error
-	called      bool
+	createdUser         user.User
+	foundUser           user.User
+	rotatedUser         user.User
+	err                 error
+	rotationErr         error
+	revokeErr           error
+	called              bool
+	refreshTokenCalled  bool
+	rotateTokenCalled   bool
+	revokeTokenCalled   bool
+	createdRefreshToken user.RefreshToken
 }
 
 func newTestServer(repository *mockUserRepository) *Server {
@@ -33,7 +40,20 @@ func newTestServer(repository *mockUserRepository) *Server {
 		panic(err)
 	}
 
-	return NewServer(registrationService, authenticationService, tokenManager)
+	refreshTokenService, err := user.NewRefreshTokenService(
+		repository,
+		7*24*time.Hour,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return NewServer(
+		registrationService,
+		authenticationService,
+		tokenManager,
+		refreshTokenService,
+	)
 }
 
 func (m *mockUserRepository) Create(
@@ -66,6 +86,39 @@ func (m *mockUserRepository) FindByEmail(
 	}
 
 	return m.foundUser, nil
+}
+
+func (m *mockUserRepository) CreateRefreshToken(
+	ctx context.Context,
+	refreshToken user.RefreshToken,
+) error {
+	m.refreshTokenCalled = true
+	m.createdRefreshToken = refreshToken
+	return nil
+}
+
+func (m *mockUserRepository) RotateRefreshToken(
+	ctx context.Context,
+	currentTokenHash string,
+	newTokenHash string,
+	expiresAt time.Time,
+) (user.User, error) {
+	m.rotateTokenCalled = true
+	if m.rotationErr != nil {
+		return user.User{}, m.rotationErr
+	}
+	return m.rotatedUser, nil
+}
+
+func (m *mockUserRepository) RevokeRefreshToken(
+	ctx context.Context,
+	tokenHash string,
+) error {
+	m.revokeTokenCalled = true
+	if m.revokeErr != nil {
+		return m.revokeErr
+	}
+	return nil
 }
 
 func TestRegister_Success(t *testing.T) {
@@ -247,6 +300,80 @@ func TestLogin_Success(t *testing.T) {
 
 	if response.ExpiresAt <= time.Now().Unix() {
 		t.Error("expected expiration time to be in the future")
+	}
+	if response.RefreshToken == "" {
+		t.Error("expected a refresh token")
+	}
+	if response.RefreshExpiresAt <= time.Now().Unix() {
+		t.Error("expected refresh token expiration time to be in the future")
+	}
+	if !repository.refreshTokenCalled {
+		t.Error("expected refresh token to be persisted")
+	}
+}
+
+func TestRefreshToken_Success(t *testing.T) {
+	repository := &mockUserRepository{
+		rotatedUser: user.User{
+			ID:   "test-user-id",
+			Role: "student",
+		},
+	}
+	server := newTestServer(repository)
+
+	response, err := server.RefreshToken(
+		context.Background(),
+		&identityv1.RefreshTokenRequest{RefreshToken: "current-refresh-token"},
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if response.AccessToken == "" || response.RefreshToken == "" {
+		t.Fatal("expected access and refresh tokens")
+	}
+	if response.UserId != "test-user-id" || response.Role != "student" {
+		t.Errorf("unexpected refreshed identity: user=%q role=%q", response.UserId, response.Role)
+	}
+	if response.ExpiresAt <= time.Now().Unix() ||
+		response.RefreshExpiresAt <= time.Now().Unix() {
+		t.Error("expected token expirations to be in the future")
+	}
+	if !repository.rotateTokenCalled {
+		t.Error("expected refresh token rotation")
+	}
+}
+
+func TestRefreshToken_InvalidToken(t *testing.T) {
+	repository := &mockUserRepository{
+		rotationErr: user.ErrInvalidRefreshToken,
+	}
+	server := newTestServer(repository)
+
+	_, err := server.RefreshToken(
+		context.Background(),
+		&identityv1.RefreshTokenRequest{RefreshToken: "invalid"},
+	)
+	if status.Code(err) != codes.Unauthenticated {
+		t.Errorf("expected Unauthenticated, got %v", status.Code(err))
+	}
+}
+
+func TestLogout_Success(t *testing.T) {
+	repository := &mockUserRepository{}
+	server := newTestServer(repository)
+
+	response, err := server.Logout(
+		context.Background(),
+		&identityv1.LogoutRequest{RefreshToken: "refresh-token"},
+	)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !response.Success {
+		t.Error("expected successful logout")
+	}
+	if !repository.revokeTokenCalled {
+		t.Error("expected refresh token family revocation")
 	}
 }
 

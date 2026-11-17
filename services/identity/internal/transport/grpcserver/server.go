@@ -17,17 +17,20 @@ type Server struct {
 	registrationService   *user.RegistrationService
 	authenticationService *user.AuthenticationService
 	tokenManager          *token.Manager
+	refreshTokenService   *user.RefreshTokenService
 }
 
 func NewServer(
 	registrationService *user.RegistrationService,
 	authenticationService *user.AuthenticationService,
 	tokenManager *token.Manager,
+	refreshTokenService *user.RefreshTokenService,
 ) *Server {
 	return &Server{
 		registrationService:   registrationService,
 		authenticationService: authenticationService,
 		tokenManager:          tokenManager,
+		refreshTokenService:   refreshTokenService,
 	}
 }
 
@@ -99,10 +102,72 @@ func (s *Server) Login(
 		return nil, status.Error(codes.Internal, "token generation failed")
 	}
 
+	refreshToken, err := s.refreshTokenService.Issue(ctx, result.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "refresh token issuance failed")
+	}
+
 	return &identityv1.LoginResponse{
-		AccessToken: accessToken,
-		UserId:      result.ID,
-		Role:        result.Role,
-		ExpiresAt:   expiresAt.Unix(),
+		AccessToken:      accessToken,
+		UserId:           result.ID,
+		Role:             result.Role,
+		ExpiresAt:        expiresAt.Unix(),
+		RefreshToken:     refreshToken.Token,
+		RefreshExpiresAt: refreshToken.ExpiresAt.Unix(),
 	}, nil
+}
+
+func (s *Server) RefreshToken(
+	ctx context.Context,
+	req *identityv1.RefreshTokenRequest,
+) (*identityv1.RefreshTokenResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "request is required")
+	}
+
+	rotatedToken, err := s.refreshTokenService.Rotate(ctx, req.GetRefreshToken())
+	if err != nil {
+		switch {
+		case errors.Is(err, user.ErrInvalidRefreshToken),
+			errors.Is(err, user.ErrRefreshTokenReused):
+			return nil, status.Error(codes.Unauthenticated, "invalid refresh token")
+		default:
+			return nil, status.Error(codes.Internal, "refresh token rotation failed")
+		}
+	}
+
+	accessToken, expiresAt, err := s.tokenManager.Generate(
+		rotatedToken.User.ID,
+		rotatedToken.User.Role,
+	)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "token generation failed")
+	}
+
+	return &identityv1.RefreshTokenResponse{
+		AccessToken:      accessToken,
+		RefreshToken:     rotatedToken.Token,
+		UserId:           rotatedToken.User.ID,
+		Role:             rotatedToken.User.Role,
+		ExpiresAt:        expiresAt.Unix(),
+		RefreshExpiresAt: rotatedToken.ExpiresAt.Unix(),
+	}, nil
+}
+
+func (s *Server) Logout(
+	ctx context.Context,
+	req *identityv1.LogoutRequest,
+) (*identityv1.LogoutResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "request is required")
+	}
+
+	if err := s.refreshTokenService.Revoke(ctx, req.GetRefreshToken()); err != nil {
+		if errors.Is(err, user.ErrInvalidRefreshToken) {
+			return nil, status.Error(codes.InvalidArgument, "refresh_token is required")
+		}
+		return nil, status.Error(codes.Internal, "logout failed")
+	}
+
+	return &identityv1.LogoutResponse{Success: true}, nil
 }

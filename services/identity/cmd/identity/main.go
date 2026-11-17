@@ -62,10 +62,19 @@ func run() error {
 		return fmt.Errorf("initialize token manager: %w", err)
 	}
 
+	refreshTokenService, err := user.NewRefreshTokenService(
+		repository,
+		time.Duration(cfg.JWT.RefreshTokenExpirationDays)*24*time.Hour,
+	)
+	if err != nil {
+		return fmt.Errorf("initialize refresh token service: %w", err)
+	}
+
 	grpcHandler := grpcserver.NewServer(
 		registrationService,
 		authenticationService,
 		tokenManager,
+		refreshTokenService,
 	)
 
 	grpcServer, healthServer, err := newGRPCServer(grpcHandler, cfg.GRPC)

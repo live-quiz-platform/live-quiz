@@ -7,6 +7,8 @@ option go_package = "github.com/live-quiz-platform/live-quiz/services/identity/a
 service IdentityService {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
 }
 
 message RegisterRequest {
@@ -31,4 +33,27 @@ message LoginResponse {
   string user_id = 2;
   string role = 3;
   int64 expires_at = 4;
+  string refresh_token = 5;
+  int64 refresh_expires_at = 6;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string user_id = 3;
+  string role = 4;
+  int64 expires_at = 5;
+  int64 refresh_expires_at = 6;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
 }

@@ -1,4 +1,3 @@
-
 package config
 
 import (
@@ -30,48 +29,91 @@ type GRPCConfig struct {
 }
 
 type JWTConfig struct {
-	Secret            string
-	ExpirationMinutes int
+	Secret                     string
+	ExpirationMinutes          int
+	RefreshTokenExpirationDays int
 }
 
 func Load() (Config, error) {
-	port, err := portFromEnv("POSTGRES_DB_PORT")
+	// Read environment variables.
+	env := struct {
+		PostgresHost           string
+		PostgresPort           string
+		PostgresUser           string
+		PostgresPassword       string
+		PostgresDatabase       string
+		PostgresSSLMode        string
+		GRPCPort               string
+		GRPCTLSCertFile        string
+		GRPCTLSKeyFile         string
+		JWTSecret              string
+		JWTExpiration          string
+		RefreshTokenExpiration string
+	}{
+		PostgresHost:           strings.TrimSpace(os.Getenv("POSTGRES_HOST")),
+		PostgresPort:           strings.TrimSpace(os.Getenv("POSTGRES_DB_PORT")),
+		PostgresUser:           strings.TrimSpace(os.Getenv("POSTGRES_USER_IDENTITY")),
+		PostgresPassword:       os.Getenv("IDENTITY_DB_PASSWORD"),
+		PostgresDatabase:       strings.TrimSpace(os.Getenv("POSTGRES_IDENTITY_DB")),
+		PostgresSSLMode:        strings.TrimSpace(os.Getenv("POSTGRES_SSL_MODE")),
+		GRPCPort:               strings.TrimSpace(os.Getenv("IDENTITY_GRPC_PORT")),
+		GRPCTLSCertFile:        strings.TrimSpace(os.Getenv("IDENTITY_TLS_CERT_FILE")),
+		GRPCTLSKeyFile:         strings.TrimSpace(os.Getenv("IDENTITY_TLS_KEY_FILE")),
+		JWTSecret:              os.Getenv("IDENTITY_JWT_SECRET"),
+		JWTExpiration:          strings.TrimSpace(os.Getenv("IDENTITY_JWT_EXPIRATION_MINUTES")),
+		RefreshTokenExpiration: strings.TrimSpace(os.Getenv("IDENTITY_REFRESH_TOKEN_EXPIRATION_DAYS")),
+	}
+
+	// Parse numeric environment variables.
+	postgresPort, err := parsePort("POSTGRES_DB_PORT", env.PostgresPort)
 	if err != nil {
 		return Config{}, err
 	}
 
-	grpcPort, err := portFromEnv("IDENTITY_GRPC_PORT")
+	grpcPort, err := parsePort("IDENTITY_GRPC_PORT", env.GRPCPort)
 	if err != nil {
 		return Config{}, err
 	}
 
-	jwtExpiration, err := strconv.Atoi(
-		strings.TrimSpace(os.Getenv("IDENTITY_JWT_EXPIRATION_MINUTES")),
+	jwtExpiration, err := parsePositiveInt(
+		"IDENTITY_JWT_EXPIRATION_MINUTES",
+		env.JWTExpiration,
 	)
-	if err != nil || jwtExpiration <= 0 {
-		return Config{}, fmt.Errorf("invalid IDENTITY_JWT_EXPIRATION_MINUTES")
+	if err != nil {
+		return Config{}, err
 	}
 
+	refreshTokenExpiration, err := parsePositiveInt(
+		"IDENTITY_REFRESH_TOKEN_EXPIRATION_DAYS",
+		env.RefreshTokenExpiration,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	// Build configuration.
 	cfg := Config{
 		Postgres: PostgresConfig{
-			Host:     strings.TrimSpace(os.Getenv("POSTGRES_HOST")),
-			Port:     port,
-			User:     strings.TrimSpace(os.Getenv("POSTGRES_USER_IDENTITY")),
-			Password: os.Getenv("IDENTITY_DB_PASSWORD"),
-			Database: strings.TrimSpace(os.Getenv("POSTGRES_IDENTITY_DB")),
-			SSLMode:  strings.TrimSpace(os.Getenv("POSTGRES_SSL_MODE")),
+			Host:     env.PostgresHost,
+			Port:     postgresPort,
+			User:     env.PostgresUser,
+			Password: env.PostgresPassword,
+			Database: env.PostgresDatabase,
+			SSLMode:  env.PostgresSSLMode,
 		},
 		GRPC: GRPCConfig{
 			Port:        grpcPort,
-			TLSCertFile: strings.TrimSpace(os.Getenv("IDENTITY_TLS_CERT_FILE")),
-			TLSKeyFile:  strings.TrimSpace(os.Getenv("IDENTITY_TLS_KEY_FILE")),
+			TLSCertFile: env.GRPCTLSCertFile,
+			TLSKeyFile:  env.GRPCTLSKeyFile,
 		},
 		JWT: JWTConfig{
-			Secret:            os.Getenv("IDENTITY_JWT_SECRET"),
-			ExpirationMinutes: jwtExpiration,
+			Secret:                     env.JWTSecret,
+			ExpirationMinutes:          jwtExpiration,
+			RefreshTokenExpirationDays: refreshTokenExpiration,
 		},
 	}
 
+	// Validate required environment variables.
 	switch {
 	case cfg.Postgres.Host == "":
 		return Config{}, fmt.Errorf("missing required environment variable: POSTGRES_HOST")
@@ -94,8 +136,7 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
-func portFromEnv(name string) (int, error) {
-	value := strings.TrimSpace(os.Getenv(name))
+func parsePort(name, value string) (int, error) {
 	if value == "" {
 		return 0, fmt.Errorf("missing required environment variable: %s", name)
 	}
@@ -106,4 +147,17 @@ func portFromEnv(name string) (int, error) {
 	}
 
 	return port, nil
+}
+
+func parsePositiveInt(name, value string) (int, error) {
+	if value == "" {
+		return 0, fmt.Errorf("missing required environment variable: %s", name)
+	}
+
+	number, err := strconv.Atoi(value)
+	if err != nil || number <= 0 {
+		return 0, fmt.Errorf("invalid %s: %s", name, value)
+	}
+
+	return number, nil
 }
