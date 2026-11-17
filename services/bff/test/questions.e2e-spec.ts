@@ -107,6 +107,24 @@ describe('Questions HTTP (e2e)', () => {
     );
   });
 
+  it('GET /api/questions forwards page and pageSize query params', async () => {
+    quizBankClient.listQuestions.mockResolvedValue({
+      questions: [],
+      total: 0,
+    });
+
+    await request(app.getHttpServer())
+      .get('/api/questions')
+      .query({ page: 2, pageSize: 10 })
+      .expect(200);
+
+    expect(quizBankClient.listQuestions).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'TEACHER' }),
+      2,
+      10,
+    );
+  });
+
   it('POST /api/questions creates a question and returns 201', async () => {
     quizBankClient.createQuestion.mockResolvedValue({
       id: 'q1',
@@ -164,21 +182,16 @@ describe('Questions HTTP (e2e)', () => {
       .expect(409);
   });
 
-  // Expected to fail until CreateQuestionDto lands (next commit).
-  // jest "failing" = test suite stays green while documenting the gap.
-  it.failing(
-    'rejects invalid create payloads with 400',
-    async () => {
-      await request(app.getHttpServer())
-        .post('/api/questions')
-        .send({
-          type: 'SINGLE_CHOICE',
-          text: '',
-          options: [{ text: 'only-one', isCorrect: true }],
-        })
-        .expect(400);
+  it('rejects invalid create payloads with 400', async () => {
+    await request(app.getHttpServer())
+      .post('/api/questions')
+      .send({
+        type: 'SINGLE_CHOICE',
+        text: '',
+        options: [{ text: 'only-one', isCorrect: true }],
+      })
+      .expect(400);
 
-      expect(quizBankClient.createQuestion).not.toHaveBeenCalled();
-    },
-  );
+    expect(quizBankClient.createQuestion).not.toHaveBeenCalled();
+  });
 });

@@ -1,8 +1,16 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import {
-  CreateQuestionInput,
-  CreateQuizInput,
-} from './quiz-bank.client';
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { CreateQuizInput } from './quiz-bank.client';
+import { CreateQuestionDto } from './dto/create-question.dto';
+import { ListQuestionsQueryDto } from './dto/list-questions-query.dto';
 import { QuizBankService } from './quiz-bank.service';
 
 // Temporary until JWT auth lands: quiz-bank requires x-user-id / TEACHER.
@@ -13,13 +21,27 @@ export class QuizBankController {
   constructor(private readonly quizBankService: QuizBankService) {}
 
   @Get('questions')
-  listQuestions() {
-    return this.quizBankService.listQuestions(DEV_TEACHER);
+  listQuestions(@Query() query: ListQuestionsQueryDto) {
+    return this.quizBankService.listQuestions(
+      DEV_TEACHER,
+      query.page,
+      query.pageSize,
+    );
   }
 
   @Post('questions')
-  createQuestion(@Body() body: CreateQuestionInput) {
-    return this.quizBankService.createQuestion(DEV_TEACHER, body);
+  @HttpCode(HttpStatus.CREATED)
+  createQuestion(@Body() body: CreateQuestionDto) {
+    return this.quizBankService.createQuestion(DEV_TEACHER, {
+      type: body.type,
+      text: body.text,
+      options: body.options.map((option) => ({
+        text: option.text,
+        isCorrect: option.isCorrect,
+      })),
+      difficulty: body.difficulty,
+      tags: body.tags,
+    });
   }
 
   @Get('quizzes/:id')
