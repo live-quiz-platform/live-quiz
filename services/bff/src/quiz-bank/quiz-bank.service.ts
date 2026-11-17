@@ -1,21 +1,31 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  CallerIdentity,
+  CreateQuestionInput,
+  CreateQuizInput,
+  QUIZ_BANK_CLIENT,
+  QuizBankClient,
+} from './quiz-bank.client';
 
 @Injectable()
 export class QuizBankService {
-  // TODO: call quiz-bank service over gRPC
-  listQuestions(): never {
-    throw new NotImplementedException('GET /api/questions');
+  constructor(
+    @Inject(QUIZ_BANK_CLIENT) private readonly quizBankClient: QuizBankClient,
+  ) {}
+
+  listQuestions(identity: CallerIdentity, page?: number, pageSize?: number) {
+    return this.quizBankClient.listQuestions(identity, page, pageSize);
   }
 
-  createQuestion(_body: unknown): never {
-    throw new NotImplementedException('POST /api/questions');
+  createQuestion(identity: CallerIdentity, input: CreateQuestionInput) {
+    return this.quizBankClient.createQuestion(identity, input);
   }
 
-  getQuiz(_id: string): never {
-    throw new NotImplementedException('GET /api/quizzes/:id');
+  getQuiz(identity: CallerIdentity, quizId: string) {
+    return this.quizBankClient.getQuiz(identity, quizId);
   }
 
-  createQuiz(_body: unknown): never {
-    throw new NotImplementedException('POST /api/quizzes');
+  createQuiz(identity: CallerIdentity, input: CreateQuizInput) {
+    return this.quizBankClient.createQuiz(identity, input);
   }
 }
