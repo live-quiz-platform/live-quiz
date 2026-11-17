@@ -1,14 +1,8 @@
 import { Module } from '@nestjs/common';
-import { QUIZ_BANK_CLIENT, QuizBankClient } from './quiz-bank.client';
+import { GrpcQuizBankClient } from './grpc-quiz-bank.client';
+import { QUIZ_BANK_CLIENT } from './quiz-bank.client';
 import { QuizBankController } from './quiz-bank.controller';
 import { QuizBankService } from './quiz-bank.service';
-
-const unsetQuizBankClient: QuizBankClient = {
-  listQuestions: () => Promise.reject(new Error('QUIZ_BANK_CLIENT not wired')),
-  createQuestion: () => Promise.reject(new Error('QUIZ_BANK_CLIENT not wired')),
-  getQuiz: () => Promise.reject(new Error('QUIZ_BANK_CLIENT not wired')),
-  createQuiz: () => Promise.reject(new Error('QUIZ_BANK_CLIENT not wired')),
-};
 
 @Module({
   controllers: [QuizBankController],
@@ -16,7 +10,7 @@ const unsetQuizBankClient: QuizBankClient = {
     QuizBankService,
     {
       provide: QUIZ_BANK_CLIENT,
-      useValue: unsetQuizBankClient,
+      useClass: GrpcQuizBankClient,
     },
   ],
 })

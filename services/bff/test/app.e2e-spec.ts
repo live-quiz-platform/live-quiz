@@ -3,9 +3,36 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request = require('supertest');
 import { AppModule } from '../src/app.module';
 import { IDENTITY_CLIENT } from '../src/identity/identity.client';
+import { QUIZ_BANK_CLIENT } from '../src/quiz-bank/quiz-bank.client';
 
 describe('BFF skeleton (e2e)', () => {
   let app: INestApplication;
+
+  const quizBankClient = {
+    listQuestions: jest.fn().mockResolvedValue({ questions: [], total: 0 }),
+    createQuestion: jest.fn().mockResolvedValue({
+      id: 'q1',
+      ownerId: 'dev-teacher',
+      type: 'SINGLE_CHOICE',
+      text: '2+2?',
+      options: [],
+      tags: [],
+    }),
+    getQuiz: jest.fn().mockResolvedValue({
+      id: 'demo',
+      ownerId: 'dev-teacher',
+      title: 'Demo',
+      questions: [],
+      settings: { timePerQuestionSeconds: 30, speedBonusEnabled: false },
+    }),
+    createQuiz: jest.fn().mockResolvedValue({
+      id: 'quiz-1',
+      ownerId: 'dev-teacher',
+      title: 'Seminar',
+      questions: [],
+      settings: { timePerQuestionSeconds: 30, speedBonusEnabled: false },
+    }),
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -15,6 +42,8 @@ describe('BFF skeleton (e2e)', () => {
       .useValue({
         register: jest.fn(),
       })
+      .overrideProvider(QUIZ_BANK_CLIENT)
+      .useValue(quizBankClient)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -33,6 +62,11 @@ describe('BFF skeleton (e2e)', () => {
     await app.close();
   });
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+    quizBankClient.listQuestions.mockResolvedValue({ questions: [], total: 0 });
+  });
+
   it('GET /api/health returns ok', async () => {
     await request(app.getHttpServer())
       .get('/api/health')
@@ -45,10 +79,12 @@ describe('BFF skeleton (e2e)', () => {
     await request(app.getHttpServer()).get('/api/me').expect(501);
   });
 
-  it('keeps quiz-bank routes as not implemented stubs', async () => {
-    await request(app.getHttpServer()).get('/api/questions').expect(501);
-    await request(app.getHttpServer()).post('/api/questions').send({}).expect(501);
-    await request(app.getHttpServer()).get('/api/quizzes/demo').expect(501);
-    await request(app.getHttpServer()).post('/api/quizzes').send({}).expect(501);
+  it('wires quiz-bank list questions through the service layer', async () => {
+    await request(app.getHttpServer())
+      .get('/api/questions')
+      .expect(200)
+      .expect({ questions: [], total: 0 });
+
+    expect(quizBankClient.listQuestions).toHaveBeenCalled();
   });
 });
