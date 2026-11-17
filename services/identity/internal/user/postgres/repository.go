@@ -75,8 +75,8 @@ func (r *Repository) Create(
 		&createdUser.Email,
 		&createdUser.PasswordHash,
 		&createdUser.DisplayName,
-		&createdUser.Role,
 		&createdUser.CreatedAt,
+		&createdUser.Role,
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
