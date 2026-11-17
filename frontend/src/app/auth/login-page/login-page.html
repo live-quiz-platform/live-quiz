@@ -1,0 +1,45 @@
+<main class="login-page">
+  <section class="welcome-panel" aria-labelledby="welcome-title">
+    <header class="welcome-header">
+      <a class="brand" href="/login" aria-label="Live Quiz, sign-in page">
+        <span class="brand-mark" aria-hidden="true">Q<span></span></span>
+        <span>Live Quiz<span class="brand-period">.</span></span>
+      </a>
+      <span class="live-badge"><span></span> Live quizzes</span>
+    </header>
+
+    <div class="welcome-content">
+      <div class="welcome-copy">
+        <h2 id="welcome-title" aria-label="Learn better together.">
+          <app-animated-title [lines]="['Learn better', 'together.']" />
+        </h2>
+        <p>Take part in your class quizzes.</p>
+      </div>
+
+      <app-login-characters [passwordActive]="passwordActive()" />
+    </div>
+
+    <footer class="welcome-footer">
+      <span class="footer-line" aria-hidden="true"></span>
+      Live quizzes for your classes
+    </footer>
+  </section>
+
+  <section class="login-panel" aria-labelledby="login-title">
+    <div class="login-box">
+      <header class="login-heading">
+        <p class="eyebrow">SIGN IN</p>
+        <h1 id="login-title">Welcome back!</h1>
+        <p class="login-description">Sign in to access your account.</p>
+      </header>
+
+      <app-login-form (passwordActiveChange)="passwordActive.set($event)" />
+
+      <p class="login-caption">For students, instructors and administrators.</p>
+      <p class="sign-up-prompt">
+        <span>Don't have an account?</span>
+        <a class="sign-up-button" routerLink="/sign-up">Sign up</a>
+      </p>
+    </div>
+  </section>
+</main>

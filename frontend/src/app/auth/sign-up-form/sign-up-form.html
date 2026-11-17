@@ -1,0 +1,136 @@
+<form class="login-form" [formGroup]="signUpForm" (ngSubmit)="onSubmit()"
+  [attr.aria-busy]="isSubmitting()" (input)="clearMessages()" novalidate>
+  <div class="form-field">
+    <label for="sign-up-username">Username</label>
+    <div class="input-field">
+      <svg class="field-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+        <circle cx="10" cy="6" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M4 17v-1a6 6 0 0 1 12 0v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input id="sign-up-username" name="username" type="text" autocomplete="username" placeholder="Your username" spellcheck="false"
+        formControlName="username" required
+        [class.input-invalid]="hasError('username')"
+        [attr.aria-invalid]="hasError('username') ? 'true' : null"
+        [attr.aria-describedby]="hasError('username') ? 'username-error' : null">
+    </div>
+    @if (hasError('username')) {
+      <p class="field-error" id="username-error" role="alert">Enter your username.</p>
+    }
+  </div>
+
+  <div class="form-field">
+    <label for="sign-up-email">Email</label>
+    <div class="input-field">
+      <svg class="field-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+        <rect x="2.5" y="4" width="15" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="m3.5 5 6.5 5 6.5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <input id="sign-up-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" spellcheck="false"
+        formControlName="email" required
+        [class.input-invalid]="hasError('email')"
+        [attr.aria-invalid]="hasError('email') ? 'true' : null"
+        [attr.aria-describedby]="hasError('email') ? 'email-error' : null">
+    </div>
+    @if (hasError('email')) {
+      <p class="field-error" id="email-error" role="alert">
+        @if (signUpForm.controls.email.hasError('required')) {
+          Enter your email address.
+        } @else {
+          Enter a valid email address.
+        }
+      </p>
+    }
+  </div>
+
+  <div class="form-field">
+    <label for="sign-up-password">Password</label>
+    <div class="password-field" (focusin)="onPasswordFocus('password')"
+      (focusout)="onPasswordBlur($event)">
+      <svg class="field-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+        <rect x="4" y="8.5" width="12" height="9" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6.5 8.5V6a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input id="sign-up-password" name="password" [type]="passwordVisible() ? 'text' : 'password'"
+        autocomplete="new-password" placeholder="At least 8 characters"
+        formControlName="password" required minlength="8"
+        [class.input-invalid]="hasError('password')"
+        [attr.aria-invalid]="hasError('password') ? 'true' : null"
+        [attr.aria-describedby]="hasError('password') ? 'password-error' : null">
+      <button class="password-toggle" type="button" [disabled]="isSubmitting()" aria-controls="sign-up-password"
+        [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+        [attr.aria-pressed]="passwordVisible()"
+        (click)="togglePasswordVisibility('password')">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6Z"
+            stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+          @if (passwordVisible()) {
+            <path d="m3 3 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          }
+        </svg>
+      </button>
+    </div>
+    @if (hasError('password')) {
+      <p class="field-error" id="password-error" role="alert">
+        @if (signUpForm.controls.password.hasError('required')) {
+          Enter your password.
+        } @else {
+          Use at least 8 characters.
+        }
+      </p>
+    }
+  </div>
+
+  <div class="form-field">
+    <label for="sign-up-confirm-password">Confirm password</label>
+    <div class="password-field" (focusin)="onPasswordFocus('confirmPassword')"
+      (focusout)="onPasswordBlur($event)">
+      <svg class="field-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+        <rect x="4" y="8.5" width="12" height="9" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M6.5 8.5V6a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input id="sign-up-confirm-password" name="confirmPassword" [type]="confirmationVisible() ? 'text' : 'password'"
+        autocomplete="new-password" placeholder="Repeat your password"
+        formControlName="confirmPassword" required
+        [class.input-invalid]="hasError('confirmPassword')"
+        [attr.aria-invalid]="hasError('confirmPassword') ? 'true' : null"
+        [attr.aria-describedby]="hasError('confirmPassword') ? 'confirmation-error' : null">
+      <button class="password-toggle" type="button" [disabled]="isSubmitting()" aria-controls="sign-up-confirm-password"
+        [attr.aria-label]="confirmationVisible() ? 'Hide password confirmation' : 'Show password confirmation'"
+        [attr.aria-pressed]="confirmationVisible()"
+        (click)="togglePasswordVisibility('confirmPassword')">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6Z"
+            stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+          @if (confirmationVisible()) {
+            <path d="m3 3 14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          }
+        </svg>
+      </button>
+    </div>
+    @if (hasError('confirmPassword')) {
+      <p class="field-error" id="confirmation-error" role="alert">
+        @if (signUpForm.controls.confirmPassword.hasError('required')) {
+          Confirm your password.
+        } @else {
+          Passwords do not match.
+        }
+      </p>
+    }
+  </div>
+
+  <button class="login-button" type="submit" [disabled]="isSubmitting()">
+    {{ isSubmitting() ? 'Creating account...' : 'Create account' }}
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor"
+        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  @if (errorMessage()) {
+    <p class="registration-feedback registration-error" role="alert">{{ errorMessage() }}</p>
+  }
+  @if (successMessage()) {
+    <p class="registration-feedback registration-success" role="status">{{ successMessage() }}</p>
+  }
+</form>
