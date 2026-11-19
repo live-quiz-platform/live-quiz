@@ -15,6 +15,9 @@ describe('POST /api/auth/register (e2e)', () => {
   let app: INestApplication;
   const identityClient: jest.Mocked<IdentityClient> = {
     register: jest.fn(),
+    login: jest.fn(),
+    refreshToken: jest.fn(),
+    logout: jest.fn(),
   };
 
   beforeAll(async () => {

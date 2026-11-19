@@ -5,6 +5,7 @@ Serviciu NestJS / TypeScript. Singurul entrypoint HTTP pentru frontend.
 - REST/JSON pe port `3001`
 - gRPC către `identity` (TLS) și `quiz-bank` (plaintext)
 - Fără bază de date proprie
+- Login / refresh / logout via identity; `/me` validează JWT local
 
 Contract detaliat pentru FE: [`CONTRACT.md`](./CONTRACT.md)
 
@@ -39,6 +40,7 @@ docker compose cp identity:/run/identity-tls/ca.crt .local/identity-tls/ca.crt
 
 - `IDENTITY_GRPC_URL=localhost:50051`
 - `IDENTITY_TLS_CA_FILE=../../.local/identity-tls/ca.crt`
+- `IDENTITY_JWT_SECRET` — **același** secret ca identity (din root `.env` / compose), minim 32 caractere
 - `QUIZ_BANK_GRPC_URL=localhost:50052`
 - `QUIZ_BANK_PROTO_ROOT=../../proto`
 
@@ -64,8 +66,10 @@ Prefix global: `/api`
 |--------|------|--------|-----------|
 | `GET` | `/api/health` | 200 | health check |
 | `POST` | `/api/auth/register` | 201 | register via identity |
-| `POST` | `/api/auth/login` | 501 | nu e implementat |
-| `GET` | `/api/me` | 501 | nu e implementat |
+| `POST` | `/api/auth/login` | 200 | login → access + refresh tokens |
+| `POST` | `/api/auth/refresh` | 200 | rotește refresh token |
+| `POST` | `/api/auth/logout` | 200 | revocă refresh family |
+| `GET` | `/api/me` | 200 | userId + role din JWT (`Authorization: Bearer`) |
 | `GET` | `/api/questions` | 200 | lista intrebari (`?page=&pageSize=`) |
 | `POST` | `/api/questions` | 201 | creeaza intrebare |
 | `GET` | `/api/quizzes/:id` | 200 | detalii quiz |
@@ -75,12 +79,12 @@ Body-uri, erori (400/401/403/404/409/…) si exemple: vezi [`CONTRACT.md`](./CON
 
 ### Auth pe quiz-bank (temporar)
 
-Pana exista JWT pe BFF, rutele de questions/quizzes trimit metadata gRPC:
+Rutele de questions/quizzes trimit încă metadata gRPC de dezvoltare:
 
 - `x-user-id: dev-teacher`
 - `x-user-role: TEACHER`
 
-(`professor` din identity se mapeaza la `TEACHER` in clientul gRPC.)
+(`professor` din identity se mapeaza la `TEACHER` in clientul gRPC.) Următorul pas: folosi JWT-ul de pe login în loc de `DEV_TEACHER`.
 
 ---
 
@@ -89,7 +93,7 @@ Pana exista JWT pe BFF, rutele de questions/quizzes trimit metadata gRPC:
 ```
 src/
   health/          # GET /health
-  users/           # register (+ stub login/me)
+  users/           # register, login, refresh, logout, me
   identity/        # client gRPC identity + mapare erori
   quiz-bank/       # questions/quizzes HTTP + client gRPC quiz-bank
 test/              # e2e
@@ -104,6 +108,15 @@ test/              # e2e
 curl -s -X POST http://localhost:3001/api/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"ana@example.com","password":"password1","displayName":"Ana"}'
+
+# login
+curl -s -X POST http://localhost:3001/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"ana@example.com","password":"password1"}'
+
+# me
+curl -s http://localhost:3001/api/me \
+  -H 'Authorization: Bearer ACCESS_TOKEN'
 
 # create question
 curl -s -X POST http://localhost:3001/api/questions \
