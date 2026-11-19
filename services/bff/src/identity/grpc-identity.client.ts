@@ -5,7 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import {
+  AuthSession,
   IdentityClient,
+  LoginInput,
+  LogoutInput,
+  RefreshInput,
   RegisterInput,
   RegisteredUser,
 } from './identity.client';
@@ -23,14 +27,42 @@ type RegisterResponse = {
   displayName: string;
 };
 
+type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+type AuthSessionResponse = {
+  accessToken?: string;
+  refreshToken?: string;
+  userId?: string;
+  role?: string;
+  expiresAt?: string | number;
+  refreshExpiresAt?: string | number;
+};
+
+type RefreshTokenRequest = {
+  refreshToken: string;
+};
+
+type LogoutRequest = {
+  refreshToken: string;
+};
+
+type LogoutResponse = {
+  success?: boolean;
+};
+
+type GrpcUnaryNoMeta<TReq, TRes> = (
+  request: TReq,
+  callback: (error: grpc.ServiceError | null, response: TRes) => void,
+) => void;
+
 type IdentityServiceClient = {
-  register: (
-    request: RegisterRequest,
-    callback: (
-      error: grpc.ServiceError | null,
-      response: RegisterResponse,
-    ) => void,
-  ) => void;
+  register: GrpcUnaryNoMeta<RegisterRequest, RegisterResponse>;
+  login: GrpcUnaryNoMeta<LoginRequest, AuthSessionResponse>;
+  refreshToken: GrpcUnaryNoMeta<RefreshTokenRequest, AuthSessionResponse>;
+  logout: GrpcUnaryNoMeta<LogoutRequest, LogoutResponse>;
   close: () => void;
 };
 
@@ -43,24 +75,11 @@ export class GrpcIdentityClient implements IdentityClient, OnModuleDestroy {
 
   async register(input: RegisterInput): Promise<RegisteredUser> {
     try {
-      const response = await new Promise<RegisterResponse>(
-        (resolvePromise, reject) => {
-          this.getClient().register(
-            {
-              email: input.email,
-              password: input.password,
-              displayName: input.displayName,
-            },
-            (error, responseValue) => {
-              if (error) {
-                reject(error);
-                return;
-              }
-              resolvePromise(responseValue);
-            },
-          );
-        },
-      );
+      const response = await this.unary(this.getClient().register, {
+        email: input.email,
+        password: input.password,
+        displayName: input.displayName,
+      });
 
       return {
         userId: response.userId,
@@ -72,8 +91,69 @@ export class GrpcIdentityClient implements IdentityClient, OnModuleDestroy {
     }
   }
 
+  async login(input: LoginInput): Promise<AuthSession> {
+    try {
+      const response = await this.unary(this.getClient().login, {
+        email: input.email,
+        password: input.password,
+      });
+      return this.toAuthSession(response);
+    } catch (error) {
+      mapIdentityGrpcError(error);
+    }
+  }
+
+  async refreshToken(input: RefreshInput): Promise<AuthSession> {
+    try {
+      const response = await this.unary(this.getClient().refreshToken, {
+        refreshToken: input.refreshToken,
+      });
+      return this.toAuthSession(response);
+    } catch (error) {
+      mapIdentityGrpcError(error);
+    }
+  }
+
+  async logout(input: LogoutInput): Promise<{ success: boolean }> {
+    try {
+      const response = await this.unary(this.getClient().logout, {
+        refreshToken: input.refreshToken,
+      });
+      return { success: Boolean(response.success) };
+    } catch (error) {
+      mapIdentityGrpcError(error);
+    }
+  }
+
   onModuleDestroy() {
     this.client?.close();
+  }
+
+  private unary<TReq, TRes>(
+    method: GrpcUnaryNoMeta<TReq, TRes>,
+    request: TReq,
+  ): Promise<TRes> {
+    const client = this.getClient();
+    return new Promise((resolvePromise, reject) => {
+      method.call(client, request, (error, response) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolvePromise(response);
+      });
+    });
+  }
+
+  private toAuthSession(response: AuthSessionResponse): AuthSession {
+    return {
+      accessToken: response.accessToken ?? '',
+      refreshToken: response.refreshToken ?? '',
+      userId: response.userId ?? '',
+      role: response.role ?? '',
+      expiresAt: Number(response.expiresAt ?? 0),
+      refreshExpiresAt: Number(response.refreshExpiresAt ?? 0),
+    };
   }
 
   private getClient(): IdentityServiceClient {

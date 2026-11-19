@@ -4,6 +4,7 @@ import {
   ConflictException,
   HttpException,
   ServiceUnavailableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { status as GrpcStatus, ServiceError } from '@grpc/grpc-js';
 
@@ -20,6 +21,8 @@ export function mapIdentityGrpcError(error: unknown): never {
       throw new BadRequestException(message);
     case GrpcStatus.ALREADY_EXISTS:
       throw new ConflictException(message);
+    case GrpcStatus.UNAUTHENTICATED:
+      throw new UnauthorizedException(message);
     case GrpcStatus.UNAVAILABLE:
       throw new ServiceUnavailableException('identity service unavailable');
     default:

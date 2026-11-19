@@ -41,6 +41,9 @@ describe('BFF skeleton (e2e)', () => {
       .overrideProvider(IDENTITY_CLIENT)
       .useValue({
         register: jest.fn(),
+        login: jest.fn(),
+        refreshToken: jest.fn(),
+        logout: jest.fn(),
       })
       .overrideProvider(QUIZ_BANK_CLIENT)
       .useValue(quizBankClient)
@@ -72,11 +75,6 @@ describe('BFF skeleton (e2e)', () => {
       .get('/api/health')
       .expect(200)
       .expect({ status: 'ok', service: 'bff' });
-  });
-
-  it('keeps login and me as not implemented stubs', async () => {
-    await request(app.getHttpServer()).post('/api/auth/login').send({}).expect(501);
-    await request(app.getHttpServer()).get('/api/me').expect(501);
   });
 
   it('wires quiz-bank list questions through the service layer', async () => {

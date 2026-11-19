@@ -217,6 +217,7 @@ services:
       IDENTITY_TLS_CA_FILE: ${IDENTITY_TLS_CA_FILE:-/run/identity-tls/ca.crt}
       IDENTITY_TLS_SERVER_NAME: ${IDENTITY_TLS_SERVER_NAME:-identity}
       IDENTITY_PROTO_PATH: /app/proto/identity/v1/identity.proto
+      IDENTITY_JWT_SECRET: ${IDENTITY_JWT_SECRET:?IDENTITY_JWT_SECRET is required}
       QUIZ_BANK_GRPC_URL: ${QUIZ_BANK_GRPC_URL:-quiz-bank:50052}
 
     ports:

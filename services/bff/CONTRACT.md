@@ -56,6 +56,132 @@ Creeaza un cont prin BFF → identity (gRPC).
 
 ---
 
+## Auth — login
+
+### `POST /api/auth/login`
+
+Autentificare prin BFF → identity (gRPC). Token-urile vin **in body** (nu cookie).
+
+#### Request body
+
+```json
+{
+  "email": "ana@example.com",
+  "password": "password1"
+}
+```
+
+| Camp | Tip | Reguli |
+|------|-----|--------|
+| `email` | string | format email valid |
+| `password` | string | minim 8 caractere |
+
+#### Success — `200 OK`
+
+```json
+{
+  "accessToken": "<jwt>",
+  "refreshToken": "<opaque>",
+  "userId": "756cc775-aaea-42e1-973a-76b6c339591c",
+  "role": "student",
+  "expiresAt": 1732036800,
+  "refreshExpiresAt": 1732641600
+}
+```
+
+`expiresAt` / `refreshExpiresAt` = Unix seconds.  
+`role` = `student` | `professor` | `administrator` (din identity).
+
+#### Errors
+
+| Status | Cand | Exemplu `message` |
+|--------|------|-------------------|
+| `400` | body invalid | array cu erori pe campuri |
+| `401` | email/parola gresite | `"invalid email or password"` |
+| `503` / `502` | identity down / eroare generica | ca la register |
+
+---
+
+## Auth — refresh
+
+### `POST /api/auth/refresh`
+
+Rotește refresh token-ul (identity invalidează pe cel vechi).
+
+#### Request body
+
+```json
+{
+  "refreshToken": "<opaque>"
+}
+```
+
+#### Success — `200 OK`
+
+Același shape ca la login (`accessToken`, `refreshToken`, `userId`, `role`, `expiresAt`, `refreshExpiresAt`).
+
+#### Errors
+
+| Status | Cand |
+|--------|------|
+| `400` | body invalid |
+| `401` | refresh invalid / expirat / reutilizat |
+
+---
+
+## Auth — logout
+
+### `POST /api/auth/logout`
+
+Revocă familia refresh token-ului pe identity.
+
+#### Request body
+
+```json
+{
+  "refreshToken": "<opaque>"
+}
+```
+
+#### Success — `200 OK`
+
+```json
+{ "success": true }
+```
+
+---
+
+## Auth — me
+
+### `GET /api/me`
+
+**Nu** există RPC Me pe identity. BFF validează local JWT-ul de access (același `IDENTITY_JWT_SECRET` ca identity).
+
+#### Headers
+
+```
+Authorization: Bearer <accessToken>
+```
+
+#### Success — `200 OK`
+
+```json
+{
+  "userId": "756cc775-aaea-42e1-973a-76b6c339591c",
+  "role": "student"
+}
+```
+
+Email / displayName **nu** sunt disponibile pe `/me` (identity nu le pune în JWT).
+
+#### Errors
+
+| Status | Cand |
+|--------|------|
+| `401` | header lipsa / token invalid / expirat |
+
+---
+
 ## Questions
 
 ### `GET /api/questions`
@@ -189,13 +315,6 @@ Intoarce obiectul `Quiz` (cu snapshot-urile intrebarilor).
 
 ---
 
-## Inca neimplementate (501)
-
-- `POST /api/auth/login`
-- `GET /api/me`
-
----
-
 ## Exemple curl
 
 ```bash
@@ -203,6 +322,25 @@ Intoarce obiectul `Quiz` (cu snapshot-urile intrebarilor).
 curl -s -X POST http://localhost:3001/api/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"ana@example.com","password":"password1","displayName":"Ana"}'
+
+# login
+curl -s -X POST http://localhost:3001/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"ana@example.com","password":"password1"}'
+
+# me (inlocuieste ACCESS_TOKEN)
+curl -s http://localhost:3001/api/me \
+  -H 'Authorization: Bearer ACCESS_TOKEN'
+
+# refresh
+curl -s -X POST http://localhost:3001/api/auth/refresh \
+  -H 'Content-Type: application/json' \
+  -d '{"refreshToken":"REFRESH_TOKEN"}'
+
+# logout
+curl -s -X POST http://localhost:3001/api/auth/logout \
+  -H 'Content-Type: application/json' \
+  -d '{"refreshToken":"REFRESH_TOKEN"}'
 
 # create question
 curl -s -X POST http://localhost:3001/api/questions \
@@ -220,3 +358,4 @@ curl -s -X POST http://localhost:3001/api/quizzes \
 # get quiz
 curl -s http://localhost:3001/api/quizzes/REPLACE_WITH_QUIZ_ID
 ```
+
