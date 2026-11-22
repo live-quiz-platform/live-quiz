@@ -51,7 +51,12 @@ describe('Quizzes HTTP (e2e)', () => {
       imports: [AppModule],
     })
       .overrideProvider(IDENTITY_CLIENT)
-      .useValue({ register: jest.fn() })
+      .useValue({
+        register: jest.fn(),
+        login: jest.fn(),
+        refreshToken: jest.fn(),
+        logout: jest.fn(),
+      })
       .overrideProvider(QUIZ_BANK_CLIENT)
       .useValue(quizBankClient)
       .compile();
