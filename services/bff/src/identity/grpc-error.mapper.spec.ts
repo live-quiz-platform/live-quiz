@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   ServiceUnavailableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { status as GrpcStatus } from '@grpc/grpc-js';
 import { mapIdentityGrpcError } from './grpc-error.mapper';
@@ -24,6 +25,15 @@ describe('mapIdentityGrpcError', () => {
         details: 'email: already exists',
       }),
     ).toThrow(ConflictException);
+  });
+
+  it('maps UNAUTHENTICATED to 401', () => {
+    expect(() =>
+      mapIdentityGrpcError({
+        code: GrpcStatus.UNAUTHENTICATED,
+        details: 'invalid email or password',
+      }),
+    ).toThrow(UnauthorizedException);
   });
 
   it('maps UNAVAILABLE to 503', () => {

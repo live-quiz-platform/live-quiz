@@ -2,10 +2,14 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Post,
 } from '@nestjs/common';
+import { LoginDto } from './dto/login.dto';
+import { LogoutDto } from './dto/logout.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UsersService } from './users.service';
 
@@ -20,12 +24,25 @@ export class UsersController {
   }
 
   @Post('auth/login')
-  login(@Body() body: unknown) {
-    return this.usersService.login(body);
+  @HttpCode(HttpStatus.OK)
+  login(@Body() dto: LoginDto) {
+    return this.usersService.login(dto);
+  }
+
+  @Post('auth/refresh')
+  @HttpCode(HttpStatus.OK)
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.usersService.refresh(dto);
+  }
+
+  @Post('auth/logout')
+  @HttpCode(HttpStatus.OK)
+  logout(@Body() dto: LogoutDto) {
+    return this.usersService.logout(dto);
   }
 
   @Get('me')
-  me() {
-    return this.usersService.me();
+  me(@Headers('authorization') authorization?: string) {
+    return this.usersService.me(authorization);
   }
 }
