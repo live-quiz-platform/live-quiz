@@ -21,6 +21,7 @@ func TestAuthenticationServiceAuthenticate(t *testing.T) {
 			Email:        "student@example.com",
 			PasswordHash: passwordHash,
 			DisplayName:  "Student",
+			IsActive:     true,
 			CreatedAt:    time.Now(),
 		},
 	}
@@ -57,6 +58,35 @@ func TestAuthenticationServiceAuthenticate(t *testing.T) {
 	}
 }
 
+func TestAuthenticationServiceAuthenticateInactiveUser(t *testing.T) {
+	passwordHash, err := HashPassword("password123")
+	if err != nil {
+		t.Fatalf("HashPassword() error = %v", err)
+	}
+
+	repository := &FakeRepository{
+		foundUser: User{
+			ID:           "test-user-id",
+			Email:        "student@example.com",
+			PasswordHash: passwordHash,
+			DisplayName:  "Student",
+			IsActive:     false,
+		},
+	}
+
+	service := NewAuthenticationService(repository)
+
+	_, err = service.Authenticate(
+		context.Background(),
+		"student@example.com",
+		"password123",
+	)
+
+	if !errors.Is(err, ErrInvalidCredentials) {
+		t.Errorf("expected ErrInvalidCredentials, got %v", err)
+	}
+}
+
 func TestAuthenticationServiceAuthenticateInvalidPassword(t *testing.T) {
 	passwordHash, err := HashPassword("correct-password")
 	if err != nil {
@@ -69,6 +99,7 @@ func TestAuthenticationServiceAuthenticateInvalidPassword(t *testing.T) {
 			Email:        "student@example.com",
 			PasswordHash: passwordHash,
 			DisplayName:  "Student",
+			IsActive:     true,
 		},
 	}
 
@@ -136,6 +167,7 @@ func TestAuthenticationServiceAuthenticateInvalidHash(t *testing.T) {
 			Email:        "student@example.com",
 			PasswordHash: "invalid-hash",
 			DisplayName:  "Student",
+			IsActive:     true,
 		},
 	}
 

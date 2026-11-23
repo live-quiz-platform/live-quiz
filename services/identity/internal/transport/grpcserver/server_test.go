@@ -1,3 +1,4 @@
+
 package grpcserver
 
 import (
@@ -267,6 +268,7 @@ func TestLogin_Success(t *testing.T) {
 			PasswordHash: passwordHash,
 			DisplayName:  "Student Test",
 			Role:         "student",
+			IsActive:     true,
 			CreatedAt:    time.Now(),
 		},
 	}
@@ -301,14 +303,61 @@ func TestLogin_Success(t *testing.T) {
 	if response.ExpiresAt <= time.Now().Unix() {
 		t.Error("expected expiration time to be in the future")
 	}
+
 	if response.RefreshToken == "" {
 		t.Error("expected a refresh token")
 	}
+
 	if response.RefreshExpiresAt <= time.Now().Unix() {
 		t.Error("expected refresh token expiration time to be in the future")
 	}
+
 	if !repository.refreshTokenCalled {
 		t.Error("expected refresh token to be persisted")
+	}
+}
+
+func TestLogin_InactiveUser(t *testing.T) {
+	password := "securepass123"
+
+	passwordHash, err := user.HashPassword(password)
+	if err != nil {
+		t.Fatalf("failed to hash password: %v", err)
+	}
+
+	repository := &mockUserRepository{
+		foundUser: user.User{
+			ID:           "test-user-id",
+			Email:        "student@example.com",
+			PasswordHash: passwordHash,
+			DisplayName:  "Student Test",
+			Role:         "student",
+			IsActive:     false,
+			CreatedAt:    time.Now(),
+		},
+	}
+
+	server := newTestServer(repository)
+
+	_, err = server.Login(context.Background(), &identityv1.LoginRequest{
+		Email:    "student@example.com",
+		Password: password,
+	})
+
+	if err == nil {
+		t.Fatal("expected error for inactive user, got nil")
+	}
+
+	if status.Code(err) != codes.Unauthenticated {
+		t.Errorf("expected Unauthenticated, got %v", status.Code(err))
+	}
+
+	if status.Convert(err).Message() != "invalid email or password" {
+		t.Errorf("unexpected error message: %v", status.Convert(err).Message())
+	}
+
+	if repository.refreshTokenCalled {
+		t.Error("expected no refresh token to be persisted for inactive user")
 	}
 }
 
@@ -390,6 +439,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 			PasswordHash: passwordHash,
 			DisplayName:  "Student Test",
 			Role:         "student",
+			IsActive:     true,
 		},
 	}
 

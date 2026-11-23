@@ -631,3 +631,120 @@ func TestRepository_RevokeRefreshToken(t *testing.T) {
 		t.Errorf("expected 2 revoked tokens, got %d", revokedCount)
 	}
 }
+
+func TestRepository_RotateRefreshToken_InactiveUser(t *testing.T) {
+	if os.Getenv("POSTGRES_HOST") == "" {
+		t.Skip("PostgreSQL environment variables are not configured")
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load configuration: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	pool, err := database.NewPostgresPool(ctx, cfg.Postgres)
+	if err != nil {
+		t.Fatalf("connect to PostgreSQL: %v", err)
+	}
+	t.Cleanup(pool.Close)
+
+	repo := NewRepository(pool)
+
+	createdUser, err := repo.Create(ctx, user.User{
+		Email:        fmt.Sprintf("inactive-refresh-test-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "test-password-hash",
+		DisplayName:  "Inactive Refresh Test",
+	})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(
+			context.Background(),
+			5*time.Second,
+		)
+		defer cleanupCancel()
+
+		_, err := pool.Exec(
+			cleanupCtx,
+			"DELETE FROM users WHERE id = $1",
+			createdUser.ID,
+		)
+		if err != nil {
+			t.Errorf("clean up test user: %v", err)
+		}
+	})
+
+	const (
+		familyID         = "00000000-0000-0000-0000-000000000007"
+		currentTokenHash = "test-inactive-user-refresh-token-hash"
+		newTokenHash     = "test-inactive-user-new-refresh-token-hash"
+	)
+
+	err = repo.CreateRefreshToken(ctx, user.RefreshToken{
+		UserID:    createdUser.ID,
+		TokenHash: currentTokenHash,
+		FamilyID:  familyID,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	})
+	if err != nil {
+		t.Fatalf("create refresh token: %v", err)
+	}
+
+	_, err = pool.Exec(
+		ctx,
+		"UPDATE users SET is_active = FALSE WHERE id = $1",
+		createdUser.ID,
+	)
+	if err != nil {
+		t.Fatalf("deactivate user: %v", err)
+	}
+
+	_, err = repo.RotateRefreshToken(
+		ctx,
+		currentTokenHash,
+		newTokenHash,
+		time.Now().Add(24*time.Hour),
+	)
+
+	if !errors.Is(err, user.ErrInvalidRefreshToken) {
+		t.Fatalf(
+			"expected ErrInvalidRefreshToken, got %v",
+			err,
+		)
+	}
+
+	var oldTokenUsed bool
+
+	err = pool.QueryRow(
+		ctx,
+		"SELECT used_at IS NOT NULL FROM refresh_tokens WHERE token_hash = $1",
+		currentTokenHash,
+	).Scan(&oldTokenUsed)
+	if err != nil {
+		t.Fatalf("check old refresh token: %v", err)
+	}
+
+	if oldTokenUsed {
+		t.Error("expected old refresh token to remain unused")
+	}
+
+	var newTokenExists bool
+
+	err = pool.QueryRow(
+		ctx,
+		"SELECT EXISTS(SELECT 1 FROM refresh_tokens WHERE token_hash = $1)",
+		newTokenHash,
+	).Scan(&newTokenExists)
+	if err != nil {
+		t.Fatalf("check new refresh token: %v", err)
+	}
+
+	if newTokenExists {
+		t.Error("expected no new refresh token to be created")
+	}
+}

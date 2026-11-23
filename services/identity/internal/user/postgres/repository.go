@@ -1,3 +1,4 @@
+
 package postgres
 
 import (
@@ -49,6 +50,7 @@ func (r *Repository) Create(
 				email,
 				password_hash,
 				display_name,
+				is_active,
 				created_at,
 				role_id
 		)
@@ -57,6 +59,7 @@ func (r *Repository) Create(
 			u.email,
 			u.password_hash,
 			u.display_name,
+			u.is_active,
 			u.created_at,
 			r.name
 		FROM inserted_user u
@@ -76,6 +79,7 @@ func (r *Repository) Create(
 		&createdUser.Email,
 		&createdUser.PasswordHash,
 		&createdUser.DisplayName,
+		&createdUser.IsActive,
 		&createdUser.CreatedAt,
 		&createdUser.Role,
 	)
@@ -102,6 +106,7 @@ func (r *Repository) FindByEmail(
 			u.email,
 			u.password_hash,
 			u.display_name,
+			u.is_active,
 			u.created_at,
 			r.name
 		FROM users u
@@ -120,6 +125,7 @@ func (r *Repository) FindByEmail(
 		&foundUser.Email,
 		&foundUser.PasswordHash,
 		&foundUser.DisplayName,
+		&foundUser.IsActive,
 		&foundUser.CreatedAt,
 		&foundUser.Role,
 	)
@@ -256,6 +262,44 @@ func (r *Repository) RotateRefreshToken(
 		return user.User{}, user.ErrInvalidRefreshToken
 	}
 
+	// Load the user and check account status before consuming the token.
+	const userQuery = `
+		SELECT
+			u.id::text,
+			u.email,
+			u.password_hash,
+			u.display_name,
+			u.is_active,
+			u.created_at,
+			r.name
+		FROM users u
+		JOIN roles r ON r.id = u.role_id
+		WHERE u.id = $1
+	`
+
+	var refreshedUser user.User
+
+	err = tx.QueryRow(ctx, userQuery, userID).Scan(
+		&refreshedUser.ID,
+		&refreshedUser.Email,
+		&refreshedUser.PasswordHash,
+		&refreshedUser.DisplayName,
+		&refreshedUser.IsActive,
+		&refreshedUser.CreatedAt,
+		&refreshedUser.Role,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user.User{}, user.ErrInvalidRefreshToken
+		}
+
+		return user.User{}, fmt.Errorf("find user for refresh token: %w", err)
+	}
+
+	if !refreshedUser.IsActive {
+		return user.User{}, user.ErrInvalidRefreshToken
+	}
+
 	const markUsedQuery = `
 		UPDATE refresh_tokens
 		SET used_at = NOW()
@@ -287,33 +331,6 @@ func (r *Repository) RotateRefreshToken(
 	)
 	if err != nil {
 		return user.User{}, fmt.Errorf("create rotated refresh token: %w", err)
-	}
-
-	const userQuery = `
-		SELECT
-			u.id::text,
-			u.email,
-			u.password_hash,
-			u.display_name,
-			u.created_at,
-			r.name
-		FROM users u
-		JOIN roles r ON r.id = u.role_id
-		WHERE u.id = $1
-	`
-
-	var refreshedUser user.User
-
-	err = tx.QueryRow(ctx, userQuery, userID).Scan(
-		&refreshedUser.ID,
-		&refreshedUser.Email,
-		&refreshedUser.PasswordHash,
-		&refreshedUser.DisplayName,
-		&refreshedUser.CreatedAt,
-		&refreshedUser.Role,
-	)
-	if err != nil {
-		return user.User{}, fmt.Errorf("find user for refresh token: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {

@@ -36,6 +36,10 @@ func (s *AuthenticationService) Authenticate(
 		return AuthenticationResult{}, err
 	}
 
+	if !authenticatedUser.IsActive {
+		return AuthenticationResult{}, ErrInvalidCredentials
+	}
+
 	passwordMatches, err := VerifyPassword(password, authenticatedUser.PasswordHash)
 	if err != nil {
 		return AuthenticationResult{}, err

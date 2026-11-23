@@ -8,5 +8,6 @@ type User struct {
 	PasswordHash string
 	DisplayName  string
 	Role         string
+	IsActive     bool
 	CreatedAt    time.Time
 }
