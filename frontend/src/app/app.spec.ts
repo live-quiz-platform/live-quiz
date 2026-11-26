@@ -8,6 +8,7 @@ import { routes } from './app.routes';
 
 describe('App', () => {
   beforeEach(async () => {
+    sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()]
@@ -80,5 +81,11 @@ describe('App', () => {
     harness.detectChanges();
     expect(router.url).toBe('/login');
     expect(harness.routeNativeElement?.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('redirects an anonymous account visit to sign in', async () => {
+    const harness = await RouterTestingHarness.create('/account');
+    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toBe('Welcome back!');
   });
 });

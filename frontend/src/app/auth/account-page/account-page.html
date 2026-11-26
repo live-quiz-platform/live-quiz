@@ -1,0 +1,37 @@
+<main class="account-page">
+  <header class="account-header">
+    <a class="brand" routerLink="/account" aria-label="Live Quiz, your account">
+      <span class="brand-mark" aria-hidden="true">Q<span></span></span>
+      <span>Live Quiz<span class="brand-period">.</span></span>
+    </a>
+  </header>
+
+  <section class="account-card" aria-labelledby="account-title" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="eyebrow">YOUR ACCOUNT</p>
+      <h1 id="account-title">One moment...</h1>
+      <p class="account-description" role="status">Checking your session.</p>
+    } @else if (errorMessage()) {
+      <p class="eyebrow">YOUR ACCOUNT</p>
+      <h1 id="account-title">Let's try again.</h1>
+      <p class="account-error" role="alert">{{ errorMessage() }}</p>
+      <button class="account-button" type="button" (click)="loadUser()"
+        [disabled]="signingOut()">Try again</button>
+    } @else if (user(); as currentUser) {
+      <span class="success-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="m6 12 4 4 8-8" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <p class="eyebrow">WELCOME TO LIVE QUIZ</p>
+      <h1 id="account-title">You're signed in!</h1>
+      <p class="account-description" role="status">You have successfully signed in.</p>
+      <span class="role-badge">{{ roleNames[currentUser.role] }}</span>
+    }
+    <button class="account-button sign-out-button" type="button" (click)="signOut()"
+      [disabled]="signingOut()">
+      {{ signingOut() ? 'Signing out...' : 'Sign out' }}
+    </button>
+  </section>
+</main>

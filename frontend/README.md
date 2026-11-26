@@ -26,7 +26,17 @@ The Angular development server forwards `/api` requests to `http://127.0.0.1:300
 
 For a production deployment, route `/api` to the BFF on the same origin as the frontend.
 
-Sign in and password reset are not connected yet. See the [BFF contract](../services/bff/CONTRACT.md) for the registration request and response.
+## Authentication
+
+Sign in calls `POST /api/auth/login`, then opens `/account`. The account page checks `GET /api/me` before showing the success message and user role. Password reset is still frontend-only.
+
+The session is kept in browser sessionStorage for the current tab. A page reload restores it and verifies it through the BFF. Tokens are returned in JSON by the current backend contract, rather than HttpOnly cookies.
+
+The HTTP interceptor sends the access token only to relative `/api/` routes. It refreshes an expiring token, shares concurrent refresh requests and retries a 401 response once. Refresh replaces both tokens. Logout calls `POST /api/auth/logout` and clears the local session even if the server cannot be reached.
+
+The root local `.env` needs `IDENTITY_JWT_SECRET` (at least 32 characters), `IDENTITY_JWT_EXPIRATION_MINUTES` and `IDENTITY_REFRESH_TOKEN_EXPIRATION_DAYS`. Identity and BFF use the same secret through Docker Compose. The secret stays on the backend.
+
+See the [BFF contract](../services/bff/CONTRACT.md) for request and response details.
 
 ## Code scaffolding
 
